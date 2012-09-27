@@ -1,4 +1,8 @@
-TPE
-===
+TPE Intelligence Artificielle (groupe 1 PS5 Lycée Blaise Pascal Orsay)
+======================================================================
 
-TPE
+TODO
+----
+
+* Installation du blog
+* 
