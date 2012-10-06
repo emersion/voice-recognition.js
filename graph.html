@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JavaScript Spectrum Example</title>
+  </head>
+  <body>
+    <audio id="audio-element"
+           src="song.ogg"
+           controls="true"
+           style="width: 512px;">
+    </audio>
+    <div><canvas id="fft" width="512" height="200"></canvas></div>
+    <img id="mozlogo" style="display:none" src="mozilla.png"></img>
+    <script>
+      var canvas = document.getElementById('fft'),
+          ctx = canvas.getContext('2d'),
+          channels,
+          rate,
+          frameBufferLength,
+          fft;
+
+      function loadedMetadata() {
+        channels          = audio.mozChannels;
+        rate              = audio.mozSampleRate;
+        frameBufferLength = audio.mozFrameBufferLength;
+         
+        fft = new FFT(frameBufferLength / channels, rate);
+      }
+
+      function audioAvailable(event) {
+        var fb = event.frameBuffer,
+            t  = event.time, /* unused, but it's there */
+            signal = new Float32Array(fb.length / channels),
+            magnitude;
+
+        for (var i = 0, fbl = frameBufferLength / 2; i < fbl; i++ ) {
+          // Assuming interlaced stereo channels,
+          // need to split and merge into a stero-mix mono signal
+          signal[i] = (fb[2*i] + fb[2*i+1]) / 2;
+        }
+
+        // Clear the canvas before drawing spectrum
+        ctx.fillStyle = "rgb(0,0,0)"; 
+        ctx.fillRect (0,0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgb(255,255,255)"; 
+
+        for (var i = 0; i < signal.length; i++ ) {
+          // multiply spectrum by a zoom value
+          magnitude = signal[i] * 1000;
+
+          // Draw rectangle bars for each frequency bin
+          ctx.fillRect(i * 4, canvas.height, 3, -magnitude);
+        }
+        
+        ctx.drawImage(document.getElementById('mozlogo'),0,0, canvas.width, canvas.height);
+
+      }
+
+      var audio = document.getElementById('audio-element');
+      audio.addEventListener('MozAudioAvailable', audioAvailable, false);
+      audio.addEventListener('loadedmetadata', loadedMetadata, false);
+
+    </script>
+  </body>
+</html>
