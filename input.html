@@ -6,6 +6,30 @@
 </head>
 
 <body>
-	<input type="file" accept="audio/*;capture=microphone" id="voice-input" />
+	<audio id="audio-element"
+           controls="true"
+           style="width: 512px;">
+
+	<script type="text/javascript">
+	window.URL = window.URL || window.webkitURL;
+	navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia ||
+	                          navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+	var audio = document.querySelector('audio');
+
+	var onFailSoHard = function(e) {
+	    alert('Reeeejected!', e);
+	};
+
+	if (navigator.getUserMedia) {
+	  navigator.getUserMedia({ audio: true, video: true }, function(stream) {
+	    alert('okay');
+	    audio.src = window.URL.createObjectURL(stream);
+	  }, onFailSoHard);
+	} else {
+	  alert('fallback');
+	  audio.src = 'song.ogg'; // fallback.
+	}
+	</script>
 </body>
 </html>
