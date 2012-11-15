@@ -2,8 +2,10 @@
 <html>
 <head>
 	<title>JavaScript Spectrum Example</title>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 </head>
 <body>
+<input type="file" id="audio-file-input"/><input type="button" id="audio-file-change" value="set"/><br />
 <audio id="audio-element"
 	src="song.ogg"
 	controls="true"
@@ -18,6 +20,11 @@ channels,
 rate,
 frameBufferLength,
 fft;
+
+function fileChange() {
+	var file = document.getElementById('audio-file-input').files[0];
+	document.getElementById('audio-element').src = window.URL.createObjectURL(file);
+}
 
 function loadedMetadata() {
 	channels          = audio.mozChannels;
@@ -53,10 +60,14 @@ function audioAvailable(event) {
 	}
 }
 
+var input = document.getElementById('audio-file-input');
+input.addEventListener('change', fileChange);
+var button = document.getElementById('audio-file-change');
+button.addEventListener('click', fileChange);
+
 var audio = document.getElementById('audio-element');
 audio.addEventListener('MozAudioAvailable', audioAvailable, false);
 audio.addEventListener('loadedmetadata', loadedMetadata, false);
-
 // FFT from dsp.js, see below
 var FFT = function(bufferSize, sampleRate) {
 	this.bufferSize   = bufferSize;

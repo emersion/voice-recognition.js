@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>JavaScript Spectrum Example</title>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body>
+
+<div><canvas id="fft-0" width="512" height="200" style="float: right;"></canvas></div>
+<input type="file" id="audio-file-input-0"/><br />
+<audio id="audio-element-0"
+	controls="true"
+	style="width: 512px;">
+</audio>
+<hr style="clear: both;" />
+<div><canvas id="fft-1" width="512" height="200" style="float: right;"></canvas></div>
+<input type="file" id="audio-file-input-1"/><br />
+<audio id="audio-element-1"
+	controls="true"
+	style="width: 512px;">
+</audio><br />
+<hr style="clear: both;" />
+<input type="button" id="audio-element-play" value="Play !" />
+<input type="button" id="audio-element-pause" value="Pause" />
+<input type="checkbox" id="show-element-fft" checked /><label for="show-element-fft">Show FFT</label>
+<hr />
+<div><canvas id="fft-diff" width="512" height="400"></canvas></div>
+
+<script>
+var canvas = document.getElementById('fft-diff'),
+ctx = canvas.getContext('2d'),
+audioNbr = 2,
+data = [],
+lastSpectrumIndex = 0,
+lastSpectrumData = [],
+showFft = document.getElementById('show-element-fft'),
+tolerance = 5,
+precision = 6;
+
+// Math
+function getNumWithSetDec(num, numOfDec) {
+	var pow10s = Math.pow( 10, numOfDec || 0 );
+	return ( numOfDec ) ? Math.round( pow10s * num ) / pow10s : num;
+}
+function getAverageFromNumArr(numArr, numOfDec, range) {
+	range = range || [0, numArr.length];
+
+	var i = range[1], 
+		sum = 0;
+	while( i-- && i >= range[0] ){
+		sum += numArr[ i ];
+	}
+	return getNumWithSetDec( (sum / (range[1] - range[0]) ), numOfDec );
+}
+function getVariance(numArr, numOfDec, range) {
+	range = range || [0, numArr.length];
+
+	var avg = getAverageFromNumArr(numArr, numOfDec, range), 
+		i = range[1],
+		v = 0;
+ 
+	while( i-- && i >= range[0] ){
+		v += Math.pow( (numArr[ i ] - avg), 2 );
+	}
+	v /= range[1] - range[0];
+	return getNumWithSetDec(v, numOfDec);
+}
+function getStandardDeviation(numArr, numOfDec, range) {
+	var stdDev = Math.sqrt(getVariance(numArr, numOfDec, range));
+	return getNumWithSetDec(stdDev, numOfDec);
+}
+
+function processData(dataIndex) {
+	(function(data) {
+		for (var i = 0; i <= data.dataIndex; i++) {
+			var range = [0, i - 1], maxMagnitude = data.magnitudes[i];
+
+			if (range[1] - range[0] > 5) {
+				var avg = getAverageFromNumArr(data.magnitudes, precision, range),
+				stdDev = getStandardDeviation(data.magnitudes, precision, range),
+				toleratedDev = stdDev * tolerance;
+
+				console.log(i, maxMagnitude, avg, toleratedDev);
+
+				if (maxMagnitude < avg - toleratedDev || maxMagnitude > avg + toleratedDev) {
+					data.range.push(i);
+					break;
+				}
+			}
+		}
+
+		console.log('---------');
+
+		for (var i = data.dataIndex; i >= 0; i--) {
+			var range = [i + 1, data.dataIndex], maxMagnitude = data.magnitudes[i];
+
+			if (range[1] - range[0] > 5) {
+				var avg = getAverageFromNumArr(data.magnitudes, precision, range),
+				stdDev = getStandardDeviation(data.magnitudes, precision, range),
+				toleratedDev = stdDev * tolerance;
+
+				console.log(i, maxMagnitude, avg, toleratedDev);
+
+				if (maxMagnitude < avg - toleratedDev || maxMagnitude > avg + toleratedDev) {
+					data.range.push(i);
+					break;
+				}
+			}
+		}
+	})(data[dataIndex]);
+}
+
+function exportData(dataIndex) {
+	var out = 'Time;Index;Max magnitude;Switch';
+	var switchI = 0;
+
+	(function(data) {
+		for (var i = 0; i < data.dataIndex; i++) {
+			for (var j = 0; j < data.range.length; j++) {
+				if (data.range[j] == i) {
+					switchI++;
+				}
+			}
+
+			out += ("\n"+data.magnitudesTime[i]+';'+data.magnitudesIndex[i]+';'+data.magnitudes[i]+';'+switchI).replace(/\./g,',');
+		}
+
+		window.open('data:text/csv;base64,'+window.btoa(out));
+	})(data[dataIndex]);
+}
+
+function fileChange(data) {
+	var file = data.fileInput.files[0];
+	if (!file) {
+		return;
+	}
+	data.audio.src = window.URL.createObjectURL(file);
+}
+
+function loadedMetadata(data) {
+	data.channels          = data.audio.mozChannels;
+	data.rate              = data.audio.mozSampleRate;
+	data.frameBufferLength = data.audio.mozFrameBufferLength;
+
+	data.started = false;
+	data.isBegining = true;
+	data.finished = false;
+	data.isEnd = true;
+
+	data.dataIndex = 0;
+
+	data.magnitudes = new Float32Array(1024);
+	data.magnitudesIndex = new Float32Array(1024);
+	data.magnitudesTime = new Float32Array(1024);
+	data.range = [];
+
+	data.fft = new FFT(data.frameBufferLength / data.channels, data.rate);
+}
+
+var sampleIndex = 0, samplesNbr = 1024, magnitudes = new Float32Array(samplesNbr), magnitudesIndexes = new Float32Array(samplesNbr), magnitudesTime = new Float32Array(samplesNbr);
+function audioAvailable(data, event) {
+	var fb = event.frameBuffer,
+	t  = event.time, /* unused, but it's there */
+	signal = new Float32Array(fb.length / data.channels),
+	magnitude,
+	lastMagnitude,
+	maxMagnitude = 0,
+	maxMagnitudeIndex;
+
+	for (var i = 0, fbl = data.frameBufferLength / 2; i < fbl; i++ ) {
+		// Assuming interlaced stereo channels,
+		// need to split and merge into a stero-mix mono signal
+		signal[i] = (fb[2*i] + fb[2*i+1]) / 2;
+	}
+
+	data.fft.forward(signal);
+
+	if (showFft.checked) {
+		data.ctx.clearRect(0,0, data.canvas.width, data.canvas.height);
+	}
+
+	for (var i = 0; i < data.fft.spectrum.length; i++ ) {
+		// multiply spectrum by a zoom value
+		magnitude = data.fft.spectrum[i] * 4000;
+
+		if (magnitude > maxMagnitude) {
+			maxMagnitude = magnitude;
+			maxMagnitudeIndex = i;
+		}
+
+		if (showFft.checked) {
+			// Draw rectangle bars for each frequency bin
+			data.ctx.fillRect(i * 4, data.canvas.height, 3, - magnitude);
+		}
+	}
+
+	if (data.dataIndex < data.magnitudes.length) {
+		data.magnitudes[data.dataIndex] = maxMagnitude;
+		data.magnitudesIndex[data.dataIndex] = maxMagnitudeIndex;
+		data.magnitudesTime[data.dataIndex] = t;
+	}
+
+	/*if (lastSpectrumData.length) {
+		// Clear the canvas before drawing spectrum
+		ctx.clearRect(0,0, canvas.width, canvas.height);
+
+		for (var i = 0; i < data.fft.spectrum.length; i++ ) {
+			// multiply spectrum by a zoom value
+			magnitude = data.fft.spectrum[i] * 4000;
+
+			lastMagnitude = lastSpectrumData[i] * 4000 || 0;
+
+			// Draw rectangle bars for each frequency bin
+			ctx.fillRect(i * 4, canvas.height / 2, 3, - magnitude + lastMagnitude);
+		}
+
+		lastSpectrumData = [];
+	} else {
+		lastSpectrumData = data.fft.spectrum;
+	}*/
+	sampleIndex++;
+	data.dataIndex++;
+}
+
+for (var i = 0; i < audioNbr; i++) {
+	(function(i) {
+		data[i] = {};
+
+		data[i].id = i;
+		data[i].audio = document.getElementById('audio-element-'+i);
+		data[i].fileInput = document.getElementById('audio-file-input-'+i);
+		data[i].canvas = document.getElementById('fft-'+i);
+		data[i].ctx = data[i].canvas.getContext('2d');
+
+		data[i].fileInput.addEventListener('change', function () {
+			fileChange(data[i]);
+		});
+		data[i].audio.addEventListener('MozAudioAvailable', function(event) {
+			audioAvailable(data[i], event);
+		});
+		data[i].audio.addEventListener('loadedmetadata', function() {
+			loadedMetadata(data[i]);
+		});
+	})(i);
+}
+
+document.getElementById('audio-element-play').addEventListener('click', function() {
+	for (var i = 0; i < data.length; i++) {
+		data[i].audio.load();
+	}
+	for (var i = 0; i < data.length; i++) {
+		data[i].audio.play();
+	}
+});
+document.getElementById('audio-element-pause').addEventListener('click', function() {
+	for (var i = 0; i < data.length; i++) {
+		data[i].audio.pause();
+	}
+});
+
+setTimeout(function() {
+	for (var i = 0; i < data.length; i++) {
+		fileChange(data[i]);
+	}
+}, 0);
+
+// FFT from dsp.js, see below
+var FFT = function(bufferSize, sampleRate) {
+	this.bufferSize   = bufferSize;
+	this.sampleRate   = sampleRate;
+	this.spectrum     = new Float32Array(bufferSize/2);
+	this.real         = new Float32Array(bufferSize);
+	this.imag         = new Float32Array(bufferSize);
+	this.reverseTable = new Uint32Array(bufferSize);
+	this.sinTable     = new Float32Array(bufferSize);
+	this.cosTable     = new Float32Array(bufferSize);
+
+	var limit = 1,
+	bit = bufferSize >> 1;
+
+	while ( limit < bufferSize ) {
+		for ( var i = 0; i < limit; i++ ) {
+			this.reverseTable[i + limit] = this.reverseTable[i] + bit;
+		}
+
+		limit = limit << 1;
+		bit = bit >> 1;
+	}
+
+	for ( var i = 0; i < bufferSize; i++ ) {
+		this.sinTable[i] = Math.sin(-Math.PI/i);
+		this.cosTable[i] = Math.cos(-Math.PI/i);
+	}
+};
+
+FFT.prototype.forward = function(buffer) {
+	var bufferSize   = this.bufferSize,
+	cosTable     = this.cosTable,
+	sinTable     = this.sinTable,
+	reverseTable = this.reverseTable,
+	real         = this.real,
+	imag         = this.imag,
+	spectrum     = this.spectrum;
+
+	if ( bufferSize !== buffer.length ) {
+		throw "Supplied buffer is not the same size as defined FFT. FFT Size: " + bufferSize + " Buffer Size: " + buffer.length;
+	}
+
+	for ( var i = 0; i < bufferSize; i++ ) {
+		real[i] = buffer[reverseTable[i]];
+		imag[i] = 0;
+	}
+
+	var halfSize = 1,
+	phaseShiftStepReal,	
+	phaseShiftStepImag,
+	currentPhaseShiftReal,
+	currentPhaseShiftImag,
+	off,
+	tr,
+	ti,
+	tmpReal,	
+	i;
+
+	while ( halfSize < bufferSize ) {
+		phaseShiftStepReal = cosTable[halfSize];
+		phaseShiftStepImag = sinTable[halfSize];
+		currentPhaseShiftReal = 1.0;
+		currentPhaseShiftImag = 0.0;
+
+		for ( var fftStep = 0; fftStep < halfSize; fftStep++ ) {
+			i = fftStep;
+
+			while ( i < bufferSize ) {
+				off = i + halfSize;
+				tr = (currentPhaseShiftReal * real[off]) - (currentPhaseShiftImag * imag[off]);
+				ti = (currentPhaseShiftReal * imag[off]) + (currentPhaseShiftImag * real[off]);
+
+				real[off] = real[i] - tr;
+				imag[off] = imag[i] - ti;
+				real[i] += tr;
+				imag[i] += ti;
+
+				i += halfSize << 1;
+			}
+
+			tmpReal = currentPhaseShiftReal;
+			currentPhaseShiftReal = (tmpReal * phaseShiftStepReal) - (currentPhaseShiftImag * phaseShiftStepImag);
+			currentPhaseShiftImag = (tmpReal * phaseShiftStepImag) + (currentPhaseShiftImag * phaseShiftStepReal);
+		}
+
+		halfSize = halfSize << 1;
+	}
+
+	i = bufferSize/2;
+	while(i--) {
+		spectrum[i] = 2 * Math.sqrt(real[i] * real[i] + imag[i] * imag[i]) / bufferSize;
+	}
+};
+</script>
+</body>
+</html>
