@@ -1,20 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>JavaScript Spectrum Example</title>
+	<title>JavaScript Voice Comparing</title>
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 </head>
 <body>
 
 <div><canvas id="fft-0" width="512" height="200" style="float: right;"></canvas></div>
+<h3 id="audio-file-name-0"></h3>
 <input type="file" id="audio-file-input-0"/><br />
+<input type="button" id="process-data-0" value="process data"/>
+<input type="button" id="export-data-csv-0" value="export data to CSV"/>
+<input type="button" id="export-data-json-0" value="export data to JSON"/><br />
 <audio id="audio-element-0"
 	controls="true"
 	style="width: 512px;">
 </audio>
 <hr style="clear: both;" />
 <div><canvas id="fft-1" width="512" height="200" style="float: right;"></canvas></div>
+<h3 id="audio-file-name-1"></h3>
 <input type="file" id="audio-file-input-1"/><br />
+<input type="button" id="process-data-1" value="process data"/>
+<input type="button" id="export-data-csv-1" value="export data to CSV"/>
+<input type="button" id="export-data-json-1" value="export data to JSON"/><br />
 <audio id="audio-element-1"
 	controls="true"
 	style="width: 512px;">
@@ -22,41 +30,65 @@
 <hr style="clear: both;" />
 <input type="button" id="audio-element-play" value="Play !" />
 <input type="button" id="audio-element-pause" value="Pause" />
+<input type="button" id="process-data" value="Process data" />
+<input type="button" id="shift-data" value="Shift" />
+<input type="button" id="compare-data" value="Compare" />
+<input type="button" id="shift-export-data" value="Shift &amp; export" />
+<input type="button" id="compare-export-data" value="Compare &amp; export" />
 <input type="checkbox" id="show-element-fft" checked /><label for="show-element-fft">Show FFT</label>
-<hr />
-<div><canvas id="fft-diff" width="512" height="400"></canvas></div>
+<input type="checkbox" id="console-log" checked /><label for="console-log">Log in console</label>
+<input type="checkbox" id="auto-change-status" checked /><label for="auto-change-status">Auto change status</label><br />
+<label for="tolerance">Tolerance : </label><input type="number" value="6" id="tolerance"/><br />
+<label for="tolerance">Precision : </label><input type="number" value="6" id="precision"/>
+<div id="result-container" style="display:none;">
+<hr style="clear: both;" />
+<h3>Result</h3>
+<div id="result" style="width:200px;margin:auto;padding:5px;">
+	Deviation : <strong id="result-deviation"></strong><br />
+	Std : <span id="result-std"></span>
+</div>
+</div>
 
 <script>
-var canvas = document.getElementById('fft-diff'),
-ctx = canvas.getContext('2d'),
-audioNbr = 2,
+var audioNbr = 2,
 data = [],
 lastSpectrumIndex = 0,
 lastSpectrumData = [],
 showFft = document.getElementById('show-element-fft'),
-tolerance = 5,
-precision = 6;
+toleranceEl = document.getElementById('tolerance'),
+precisionEl = document.getElementById('precision'),
+logConsoleEl = document.getElementById('console-log'),
+autoChangeStatusEl = document.getElementById('auto-change-status');
+
+function logMessage() {
+	if (logConsoleEl.checked) {
+		console.log.apply(window, Array.prototype.slice.call(arguments));
+	}
+}
 
 // Math
 function getNumWithSetDec(num, numOfDec) {
-	var pow10s = Math.pow( 10, numOfDec || 0 );
+	numOfDec = (typeof numOfDec == 'number') ? numOfDec : parseFloat(precisionEl.value);
+
+	var pow10s = Math.pow( 10, numOfDec );
 	return ( numOfDec ) ? Math.round( pow10s * num ) / pow10s : num;
 }
 function getAverageFromNumArr(numArr, numOfDec, range) {
-	range = range || [0, numArr.length];
+	range = range || [0, numArr.length - 1];
 
-	var i = range[1], 
+	var i = range[1] + 1,
 		sum = 0;
 	while( i-- && i >= range[0] ){
 		sum += numArr[ i ];
 	}
+
 	return getNumWithSetDec( (sum / (range[1] - range[0]) ), numOfDec );
 }
 function getVariance(numArr, numOfDec, range) {
-	range = range || [0, numArr.length];
+	range = range || [0, numArr.length - 1];
 
 	var avg = getAverageFromNumArr(numArr, numOfDec, range), 
-		i = range[1],
+		i = range[1] + 1,
 		v = 0;
  
 	while( i-- && i >= range[0] ){
@@ -70,8 +102,91 @@ function getStandardDeviation(numArr, numOfDec, range) {
 	return getNumWithSetDec(stdDev, numOfDec);
 }
 
+function audioChangeState(thisData) {
+	var id = thisData.id, status = thisData.status;
+
+	var globalMinStatus;
+	for (var i = 0; i < data.length; i++) {
+		if (typeof globalMinStatus != 'number' || data[i].status < globalMinStatus) {
+			globalMinStatus = data[i].status;
+		}
+	}
+
+	var globalControls = {
+		play: document.getElementById('audio-element-play'),
+		pause: document.getElementById('audio-element-pause'),
+		processData: document.getElementById('process-data'),
+		shiftData: document.getElementById('shift-data'),
+		compareData: document.getElementById('compare-data'),
+		shiftExportData: document.getElementById('shift-export-data'),
+		compareExportData: document.getElementById('compare-export-data')
+	};
+	var specificControls = {
+		processData: document.getElementById('process-data-' + id),
+		exportDataToCSV: document.getElementById('export-data-csv-' + id),
+		exportDataToJSON: document.getElementById('export-data-json-' + id)
+	};
+
+	for (var index in globalControls) {
+		globalControls[index].disabled = true;
+	}
+	for (var index in specificControls) {
+		specificControls[index].disabled = true;
+	}
+
+	if (globalMinStatus > 0) {
+		globalControls.play.disabled = false;
+		globalControls.pause.disabled = false;
+	}
+
+	if (status > 1) {
+		specificControls.processData.disabled = false;
+	}
+	if (globalMinStatus > 1) {
+		globalControls.processData.disabled = false;
+	}
+
+	if (status > 2) {
+		specificControls.exportDataToCSV.disabled = false;
+		specificControls.exportDataToJSON.disabled = false;
+	}
+	if (globalMinStatus > 2) {
+		globalControls.shiftData.disabled = false;
+		globalControls.compareData.disabled = false;
+		globalControls.shiftExportData.disabled = false;
+		globalControls.compareExportData.disabled = false;
+	}
+
+	if (autoChangeStatusEl.checked) {
+		var globalFunctions = {
+			3: function() {
+				compareData(0, 1);
+			}
+		};
+		var specificFunctions = {
+			2: function() {
+				processData(id);
+			}
+		};
+
+		if (typeof globalFunctions[globalMinStatus] == 'function') {
+			globalFunctions[globalMinStatus]();
+		}
+		if (typeof specificFunctions[status] == 'function') {
+			specificFunctions[status]();
+		}
+	}
+}
+
 function processData(dataIndex) {
 	(function(data) {
+		var tolerance = parseFloat(toleranceEl.value),
+		precision = parseFloat(precisionEl.value);
+
+		logMessage('Détermination du début...');
+
+		data.range = [0, data.dataIndex];
+
 		for (var i = 0; i <= data.dataIndex; i++) {
 			var range = [0, i - 1], maxMagnitude = data.magnitudes[i];
 
@@ -80,16 +195,17 @@ function processData(dataIndex) {
 				stdDev = getStandardDeviation(data.magnitudes, precision, range),
 				toleratedDev = stdDev * tolerance;
 
-				console.log(i, maxMagnitude, avg, toleratedDev);
+				logMessage(i, maxMagnitude, avg, toleratedDev);
 
 				if (maxMagnitude < avg - toleratedDev || maxMagnitude > avg + toleratedDev) {
-					data.range.push(i);
+					data.range[0] = i;
 					break;
 				}
 			}
 		}
 
-		console.log('---------');
+		logMessage('---------');
+		logMessage('Détermination de la fin...');
 
 		for (var i = data.dataIndex; i >= 0; i--) {
 			var range = [i + 1, data.dataIndex], maxMagnitude = data.magnitudes[i];
@@ -99,34 +215,229 @@ function processData(dataIndex) {
 				stdDev = getStandardDeviation(data.magnitudes, precision, range),
 				toleratedDev = stdDev * tolerance;
 
-				console.log(i, maxMagnitude, avg, toleratedDev);
+				logMessage(i, maxMagnitude, avg, toleratedDev);
 
 				if (maxMagnitude < avg - toleratedDev || maxMagnitude > avg + toleratedDev) {
-					data.range.push(i);
+					data.range[1] = i;
 					break;
 				}
 			}
 		}
+
+		logMessage('---------');
+		logMessage('Mise à l\'échelle des données...');
+
+		data.percentages = [];
+		data.percentagesTime = [];
+
+		var startTime = data.magnitudesTime[data.range[0]],
+		endTime = data.magnitudesTime[data.range[1]],
+		duration = endTime - startTime;
+
+		for (var i = 0; i <= data.dataIndex; i++) {
+			var magnitude = data.magnitudes[i];
+
+			data.percentages[i] = magnitude / data.maxMagnitude * 100;
+
+			var t = data.magnitudesTime[i] - startTime;
+
+			data.percentagesTime[i] = t / duration * 100;
+		}
+
+		data.status = 3;
+		audioChangeState(data);
 	})(data[dataIndex]);
 }
 
-function exportData(dataIndex) {
-	var out = 'Time;Index;Max magnitude;Switch';
-	var switchI = 0;
+function exportData(contents, type) {
+	window.open('data:'+type+';base64,'+window.btoa(contents));
+}
+
+function exportCSV(csv) {
+	return exportData(csv, 'text/csv');
+}
+
+function exportJSON(data) {
+	return exportData(JSON.stringify(data), 'application/json');
+}
+
+function exportProcessedData(dataIndex, format) {
+	var format = format || 'json';
+
+	var out = 'Time;Time (%);Index;Max magnitude;Max magnitude (%);Status';
+	var status = 0;
 
 	(function(data) {
-		for (var i = 0; i < data.dataIndex; i++) {
-			for (var j = 0; j < data.range.length; j++) {
-				if (data.range[j] == i) {
-					switchI++;
-				}
-			}
+		switch (format) {
+			case 'csv':
+				for (var i = 0; i <= data.dataIndex; i++) {
+					for (var j = 0; j < data.range.length; j++) {
+						if (data.range[j] == i) {
+							status = (status) ? 0 : 1;
+						}
+					}
 
-			out += ("\n"+data.magnitudesTime[i]+';'+data.magnitudesIndex[i]+';'+data.magnitudes[i]+';'+switchI).replace(/\./g,',');
+					out += ("\n"+data.magnitudesTime[i]+';'+data.percentagesTime[i]+';'+data.magnitudesIndex[i]+';'+data.magnitudes[i]+';'+data.percentages[i]+';'+status).replace(/\./g,',');
+				}
+
+				exportCSV(out);
+				break;
+			case 'json':
+				var dataToExport = {};
+
+				for (var i = data.range[0]; i <= data.range[1]; i++) {
+					dataToExport[data.percentagesTime[i]] = data.percentages[i];
+				}
+
+				exportJSON(dataToExport);
+				break;
 		}
 
-		window.open('data:text/csv;base64,'+window.btoa(out));
+		
 	})(data[dataIndex]);
+}
+
+var maxDiff = 5,
+toleratedRatio = 3;
+function shiftData(leftIndex, rightIndex) {
+	return (function(right, left) {
+		var comparableData = {
+			right: [],
+			left: []
+		};
+
+		var lastLeftIndex = left.range[0] - 1,
+		rightPercentageTime = 0,
+		rightMaxPercentage = 0;
+		for (var rightIndex = right.range[0]; rightIndex <= right.range[1]; rightIndex++) {
+			rightPercentageTime = right.percentagesTime[rightIndex];
+			rightMaxPercentage = right.percentages[rightIndex];
+
+			logMessage('---------');
+			logMessage('Right : ', rightIndex, rightPercentageTime, rightMaxPercentage);
+
+			var j = 0,
+			diff = 0,
+			leftIndex = null,
+			leftMaxPercentage = null,
+			deviation = 0,
+			ratio = 0,
+			leftPercentageTime = 0,
+			isDiffPositive = true;
+			do {
+				var leftIndex = lastLeftIndex + 1 + ((isDiffPositive) ? 1 : -1) * diff;
+
+				if (leftIndex >= left.range[0] && leftIndex <= left.range[1]) {
+					leftMaxPercentage = left.percentages[leftIndex];
+
+					deviation = Math.abs(rightMaxPercentage - leftMaxPercentage);
+					ratio = deviation / ((rightMaxPercentage + leftMaxPercentage) / 2);
+
+					logMessage(isDiffPositive, rightIndex, leftIndex, rightMaxPercentage, leftMaxPercentage, deviation, ratio, (ratio <= toleratedRatio));
+
+					if (ratio <= toleratedRatio) {
+						break;
+					}
+				} else {
+					logMessage(isDiffPositive, rightIndex, leftIndex, false);
+
+					leftMaxPercentage = null;
+					leftIndex = null;
+				}
+
+				j++;
+				isDiffPositive = (j % 2 == 0) ? true : false;
+				if (isDiffPositive) {
+					diff++;
+				}
+			} while (diff < maxDiff);
+
+			if (leftIndex === null) {
+				leftIndex = lastLeftIndex + 1;
+				leftMaxPercentage = left.percentages[leftIndex];
+			}
+
+			logMessage('=>', rightIndex, leftIndex, rightMaxPercentage, leftMaxPercentage);
+
+			comparableData.right.push(rightMaxPercentage);
+			comparableData.left.push(leftMaxPercentage);
+
+			lastLeftIndex = leftIndex;
+		}
+
+		right.status = 4;
+		left.status = 4;
+
+		audioChangeState(right);
+		audioChangeState(left);
+
+		return comparableData;
+	})(data[rightIndex], data[leftIndex]);
+}
+
+function exportShift(data) {
+	var out = 'Index;Right;Left';
+	for (var i = 0; i < data.right.length; i++) {
+		out += ("\n"+i+';'+data.right[i]+';'+data.left[i]).replace(/\./g,',');
+	}
+	exportCSV(out);
+}
+
+function compareData(leftIndex, rightIndex) {
+	var comparableData = shiftData(leftIndex, rightIndex);
+
+	var deviations = [];
+
+	var rightMaxPercentage, leftMaxPercentage, deviationPercentage, ratio, deviation;
+	for (var i = 0; i < comparableData.right.length; i++) {
+		rightMaxPercentage = comparableData.right[i];
+		leftMaxPercentage = comparableData.left[i];
+
+		deviationPercentage = Math.abs(rightMaxPercentage - leftMaxPercentage);
+		ratio = deviationPercentage / ((rightMaxPercentage + leftMaxPercentage) / 2);
+
+		deviations.push(ratio);
+	}
+	
+	var avg = getAverageFromNumArr(deviations),
+	std = getStandardDeviation(deviations);
+
+	logMessage('---------');
+	logMessage('Compare :');
+	logMessage('Avg : ' + avg);
+	logMessage('Std : ' + std);
+
+	var gradientRange = [0, 2];
+	var gradientColors = [[0,255,0], [255,0,0]];
+
+	var colorFactor = avg / (gradientRange[1] - gradientRange[0]);
+	var resultElColor = [0, 0, 0];
+	for (var i = 0; i < resultElColor.length; i++) {
+		resultElColor[i] = Math.min(Math.round((gradientColors[1][i] * colorFactor + gradientColors[0][i] * (1 - colorFactor)) / 2), 255);
+	}
+
+	document.getElementById('result-container').style.display = 'block';
+	document.getElementById('result').style.backgroundColor = 'rgba('+resultElColor.join(',')+',0.8)';
+	document.getElementById('result-deviation').innerHTML = avg;
+	document.getElementById('result-std').innerHTML = std;
+
+	var right = data[rightIndex], left = data[leftIndex];
+
+	right.status = 5;
+	left.status = 5;
+
+	audioChangeState(right);
+	audioChangeState(left);
+
+	return deviations;
+}
+
+function exportCompare(data) {
+	var out = 'Index;Deviation';
+	for (var i = 0; i < data.length; i++) {
+		out += ("\n"+i+';'+data[i]).replace(/\./g,',');
+	}
+	exportCSV(out);
 }
 
 function fileChange(data) {
@@ -135,6 +446,8 @@ function fileChange(data) {
 		return;
 	}
 	data.audio.src = window.URL.createObjectURL(file);
+	data.name = file.name;
+	data.title.innerHTML = data.name;
 }
 
 function loadedMetadata(data) {
@@ -148,6 +461,7 @@ function loadedMetadata(data) {
 	data.isEnd = true;
 
 	data.dataIndex = 0;
+	data.maxMagnitude = 0;
 
 	data.magnitudes = new Float32Array(1024);
 	data.magnitudesIndex = new Float32Array(1024);
@@ -157,7 +471,6 @@ function loadedMetadata(data) {
 	data.fft = new FFT(data.frameBufferLength / data.channels, data.rate);
 }
 
-var sampleIndex = 0, samplesNbr = 1024, magnitudes = new Float32Array(samplesNbr), magnitudesIndexes = new Float32Array(samplesNbr), magnitudesTime = new Float32Array(samplesNbr);
 function audioAvailable(data, event) {
 	var fb = event.frameBuffer,
 	t  = event.time, /* unused, but it's there */
@@ -200,25 +513,10 @@ function audioAvailable(data, event) {
 		data.magnitudesTime[data.dataIndex] = t;
 	}
 
-	/*if (lastSpectrumData.length) {
-		// Clear the canvas before drawing spectrum
-		ctx.clearRect(0,0, canvas.width, canvas.height);
+	if (data.maxMagnitude < maxMagnitude) {
+		data.maxMagnitude = maxMagnitude;
+	}
 
-		for (var i = 0; i < data.fft.spectrum.length; i++ ) {
-			// multiply spectrum by a zoom value
-			magnitude = data.fft.spectrum[i] * 4000;
-
-			lastMagnitude = lastSpectrumData[i] * 4000 || 0;
-
-			// Draw rectangle bars for each frequency bin
-			ctx.fillRect(i * 4, canvas.height / 2, 3, - magnitude + lastMagnitude);
-		}
-
-		lastSpectrumData = [];
-	} else {
-		lastSpectrumData = data.fft.spectrum;
-	}*/
-	sampleIndex++;
 	data.dataIndex++;
 }
 
@@ -229,8 +527,10 @@ for (var i = 0; i < audioNbr; i++) {
 		data[i].id = i;
 		data[i].audio = document.getElementById('audio-element-'+i);
 		data[i].fileInput = document.getElementById('audio-file-input-'+i);
+		data[i].title = document.getElementById('audio-file-name-'+i);
 		data[i].canvas = document.getElementById('fft-'+i);
 		data[i].ctx = data[i].canvas.getContext('2d');
+		data[i].status = 0;
 
 		data[i].fileInput.addEventListener('change', function () {
 			fileChange(data[i]);
@@ -240,7 +540,28 @@ for (var i = 0; i < audioNbr; i++) {
 		});
 		data[i].audio.addEventListener('loadedmetadata', function() {
 			loadedMetadata(data[i]);
+
+			data[i].status = 1;
+			audioChangeState(data[i]);
 		});
+		data[i].audio.addEventListener('ended', function(e) {
+			data[i].status = 2;
+			audioChangeState(data[i]);
+		});
+
+		data[i].title.innerHTML = 'Audio input #'+(i+1);
+
+		document.getElementById('process-data-'+i).addEventListener('click', function() {
+			processData(i);
+		});
+		document.getElementById('export-data-csv-'+i).addEventListener('click', function() {
+			exportProcessedData(i, 'csv');
+		});
+		document.getElementById('export-data-json-'+i).addEventListener('click', function() {
+			exportProcessedData(i, 'json');
+		});
+
+		audioChangeState(data[i]);
 	})(i);
 }
 
@@ -256,6 +577,25 @@ document.getElementById('audio-element-pause').addEventListener('click', functio
 	for (var i = 0; i < data.length; i++) {
 		data[i].audio.pause();
 	}
+});
+document.getElementById('process-data').addEventListener('click', function() {
+	for (var i = 0; i < data.length; i++) {
+		processData(i);
+	}
+});
+document.getElementById('shift-data').addEventListener('click', function() {
+	shiftData(0, 1);
+});
+document.getElementById('compare-data').addEventListener('click', function() {
+	compareData(0, 1);
+});
+document.getElementById('shift-export-data').addEventListener('click', function() {
+	var data = shiftData(0, 1);
+	exportShift(data);
+});
+document.getElementById('compare-export-data').addEventListener('click', function() {
+	var data = compareData(0, 1);
+	exportCompare(data);
 });
 
 setTimeout(function() {
