@@ -1,8 +1,4 @@
-TPE Intelligence Artificielle (groupe 1 PS5 Lycée Blaise Pascal Orsay)
-======================================================================
+voice-recognition.js
+====================
 
-TODO
-----
-
-* Installation du blog
-* 
+A Javascript library for low-level voice recognition.
