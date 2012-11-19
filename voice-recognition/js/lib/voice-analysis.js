@@ -96,36 +96,15 @@ var VoiceAnalysis = function VoiceAnalysis(options) {
 	Utils.Observable.call(this);
 
 	this._id = options.id;
-	this._controls = options.controls;
+	this._$controls = options.controls;
 	this._status = 0;
-
-	var that = this;
-
-	this._controls.$fileInput.bind('change', function() {
-		that._fileChange();
-	});
-
-	this._controls.$audio
-		.bind('MozAudioAvailable', function(event) {
-			that._audioAvailable(event.originalEvent);
-		})
-		.bind('loadedmetadata', function() {
-			that._loadedMetadata();
-		})
-		.bind('ended', function() {
-			that._updateStatus(2);
-		});
-
-	this._controls.$title.html('Audio input #' + (i + 1));
-
-	this._updateStatus();
 };
 VoiceAnalysis.prototype = {
 	id: function getId() {
 		return this._id;
 	},
 	control: function getControl(name) {
-		return this._controls['$' + name];
+		return this._$controls[name];
 	},
 	status: function getStatus() {
 		return this._status;
@@ -139,60 +118,47 @@ VoiceAnalysis.prototype = {
 			time: this._normalizedTime
 		};
 	},
+	init: function init() {
+		var that = this;
+
+		this.control('audio')
+			.bind('MozAudioAvailable', function(event) {
+				that._audioAvailable(event.originalEvent);
+			})
+			.bind('loadedmetadata', function() {
+				that._loadedMetadata();
+			})
+			.bind('ended', function() {
+				that._updateStatus(2);
+			});
+
+		this._updateStatus();
+	},
 	_updateStatus: function _updateStatus(status) {
 		status = (typeof status == 'number') ? status : this._status;
 		this._status = status;
 
-		var specificControls = {
-			processData: document.getElementById('process-data-' + this._id),
-			exportDataToCSV: document.getElementById('export-data-csv-' + this._id),
-			exportDataToJSON: document.getElementById('export-data-json-' + this._id)
-		};
-
-		for (var index in specificControls) {
-			specificControls[index].disabled = true;
-		}
-
-		if (status > 1) {
-			specificControls.processData.disabled = false;
-		}
-
-		if (status > 2) {
-			specificControls.exportDataToCSV.disabled = false;
-			specificControls.exportDataToJSON.disabled = false;
-		}
-
-		VoiceAnalysis._updatedStatus(this);
-
 		this.notify('updatestatus', { status: status });
 
-		if (Utils.Options.get('voice.fnChaining')) {
-			var that = this;
-
-			var specificFunctions = {
-				2: function() {
-					that.processData();
-				}
-			};
-
-			if (typeof specificFunctions[status] == 'function') {
-				specificFunctions[status]();
-			}
-		}
+		VoiceAnalysis._updatedStatus(this);
 	},
-	_fileChange: function _fileChange() {
-		var file = this._controls.$fileInput[0].files[0];
+	setInputFile: function setInputFile(file) {
 		if (!file) {
 			return;
 		}
-		this._controls.$audio.attr('src', window.URL.createObjectURL(file));
+
+		this._input = file;
+		this.control('audio').attr('src', window.URL.createObjectURL(file));
 		this._name = file.name;
-		this._controls.$title.innerHTML = this._name;
+
+		this.notify('inputchange', {
+			file: file
+		});
 	},
 	_loadedMetadata: function _loadedMetadata() {
-		this._channels          = this._controls.$audio[0].mozChannels;
-		this._rate              = this._controls.$audio[0].mozSampleRate;
-		this._frameBufferLength = this._controls.$audio[0].mozFrameBufferLength;
+		this._channels          = this.control('audio')[0].mozChannels;
+		this._rate              = this.control('audio')[0].mozSampleRate;
+		this._frameBufferLength = this.control('audio')[0].mozFrameBufferLength;
 
 		this._dataIndex = 0;
 		this._maxMagnitude = 0;
@@ -215,7 +181,7 @@ VoiceAnalysis.prototype = {
 		maxMagnitudeIndex;
 
 		var showFFT = Utils.Options.get('voice.comparing.showFFT'),
-		canvas = this._controls.$canvas[0],
+		canvas = this.control('canvas')[0],
 		ctx = canvas.getContext('2d');
 
 		for (var i = 0, fbl = this._frameBufferLength / 2; i < fbl; i++ ) {
@@ -379,33 +345,5 @@ VoiceAnalysis._updatedStatus = function _updatedStatus(analysis) {
 		}
 	}
 
-	var globalControls = {
-		$play: $('#audio-element-play'),
-		$pause: $('#audio-element-pause'),
-		$processData: $('#process-data')
-	};
-
-	for (var index in globalControls) {
-		globalControls[index].prop('disabled', true);
-	}
-
-	if (globalMinStatus > 0) {
-		globalControls.$play.prop('disabled', false);
-		globalControls.$pause.prop('disabled', false);
-	}
-	if (globalMinStatus > 1) {
-		globalControls.$processData.prop('disabled', false);
-	}
-
-	if (Utils.Options.get('voice.fnChaining')) {
-		var globalFunctions = {
-			3: function() {
-				compareData(0, 1);
-			}
-		};
-
-		if (typeof globalFunctions[globalMinStatus] == 'function') {
-			globalFunctions[globalMinStatus]();
-		}
-	}
+	VoiceAnalysis.notify('updatestatus', { status: globalMinStatus });
 };

@@ -1,59 +1,31 @@
-var VoiceComparison = function VoiceComparison(controls, left, right) {
+var VoiceComparison = function VoiceComparison(left, right) {
+	Utils.Observable.call(this);
+
 	this._analyses = [left, right];
-	this._controls = controls;
 	this._data = {};
 	this._status = 0;
-
-	this._updateStatus();
 };
 VoiceComparison.prototype = {
-	control: function getControl(name) {
-		return this._controls['$' + name];
-	},
 	status: function getStatus() {
 		return this._status;
+	},
+	init: function init() {
+		this._updateStatus();
 	},
 	_updateStatus: function _updateStatus(status) {
 		status = (typeof status == 'number') ? status : this._status;
 		this._status = status;
 
-		var specificControls = {
-			$shiftData: this.control('shiftData'),
-			$shiftAndExportData: this.control('shiftAndExportData'),
-			$compareData: this.control('compareData'),
-			$comparedAndExportData: this.control('comparedAndExportData')
-		};
-
-		for (var index in specificControls) {
-			specificControls[index].prop('disabled', true);
-		}
-
-		if (status > 1) {
-			specificControls.$shiftData.prop('disabled', false);
-			specificControls.$shiftAndExportData.prop('disabled', false);
-		}
-
-		if (status > 2) {
-			specificControls.$compareData.prop('disabled', false);
-			specificControls.$comparedAndExportData.prop('disabled', false);
-		}
-
-		if (Utils.Options.get('voice.fnChaining')) {
-			var that = this;
-
-			var specificFunctions = {
-				1: function() {
-					that.shiftData();
-				},
-				2: function() {
-					that.compareData();
-				}
-			};
-
-			if (typeof specificFunctions[status] == 'function') {
-				specificFunctions[status]();
+		this.notify('updatestatus', { status: status });
+	},
+	checkVoiceAnalyses: function checkVoiceAnalyses() {
+		for (var i = 0; i < this._analyses.length; i++) {
+			if (this._analyses[i].status() < 3) {
+				return false;
 			}
 		}
+
+		this._updateStatus(1);
 	},
 	shiftData: function shiftData() {
 		var left = this._analyses[0], right = this._analyses[1],
@@ -72,7 +44,7 @@ VoiceComparison.prototype = {
 		rightMaxPercentage = 0;
 		for (var rightIndex = right.range()[0]; rightIndex <= right.range()[1]; rightIndex++) {
 			rightPercentageTime = rightNormalizedData.time[rightIndex];
-			rightMaxPercentage = rightNormalizedData.magnitudes[rightIndex];
+			rightMaxPercentage = rightNormalizedData.magnitude[rightIndex];
 
 			Utils.logMessage('---------');
 			Utils.logMessage('Right : ', rightIndex, rightPercentageTime, rightMaxPercentage);
@@ -89,7 +61,7 @@ VoiceComparison.prototype = {
 				var leftIndex = lastLeftIndex + 1 + ((isDiffPositive) ? 1 : -1) * diff;
 
 				if (leftIndex >= left.range()[0] && leftIndex <= left.range()[1]) {
-					leftMaxPercentage = leftNormalizedData.magnitudes[leftIndex];
+					leftMaxPercentage = leftNormalizedData.magnitude[leftIndex];
 
 					deviation = Math.abs(rightMaxPercentage - leftMaxPercentage);
 					ratio = deviation / ((rightMaxPercentage + leftMaxPercentage) / 2);
@@ -115,7 +87,7 @@ VoiceComparison.prototype = {
 
 			if (leftIndex === null) {
 				leftIndex = lastLeftIndex + 1;
-				leftMaxPercentage = leftNormalizedData.magnitudes[leftIndex];
+				leftMaxPercentage = leftNormalizedData.magnitude[leftIndex];
 			}
 
 			Utils.logMessage('=>', rightIndex, leftIndex, rightMaxPercentage, leftMaxPercentage);
@@ -126,9 +98,9 @@ VoiceComparison.prototype = {
 			lastLeftIndex = leftIndex;
 		}
 
-		this._updateStatus(1);
-
 		this._data = comparableData;
+
+		this._updateStatus(2);
 	},
 	exportShiftedData: function exportShiftedData() {
 		var out = 'Index;Right;Left';
@@ -165,26 +137,15 @@ VoiceComparison.prototype = {
 		Utils.logMessage('Avg : ' + avg);
 		Utils.logMessage('Std : ' + std);
 
-		var deviationRange = [0, 1.5],
-		factor = avg / (deviationRange[1] - deviationRange[0]),
-		resultClass;
+		this.notify('compare', {
+			deviations: deviations,
+			result: {
+				avg: avg,
+				std: std
+			}
+		});
 
-		if (factor <= 0.33) {
-			resultClass = 'text-success';
-		} else if (factor <= 0.66) {
-			resultClass = 'text-warning';
-		} else {
-			resultClass = 'text-error';
-		}
-
-		document.getElementById('result-container').style.display = 'block';
-		$('#result-deviation').removeClass('text-success text-warning text-error').addClass(resultClass);
-		document.getElementById('result-deviation').innerHTML = avg;
-		document.getElementById('result-std').innerHTML = std;
-
-		var right = data[rightIndex], left = data[leftIndex];
-
-		this._updateStatus(2);
+		this._updateStatus(3);
 	},
 	exportComparedData: function exportComparedData() {
 		var out = 'Index;Deviation';
@@ -194,7 +155,8 @@ VoiceComparison.prototype = {
 		Utils.Export.exportCSV(out);
 	}
 };
+Utils.inherit(VoiceComparison, Utils.Observable);
 
-VoiceComparison.build = function(controls, left, right) {
-	return new VoiceComparison(controls, left, right);
+VoiceComparison.build = function build(left, right) {
+	return new VoiceComparison(left, right);
 };
