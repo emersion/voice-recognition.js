@@ -31,10 +31,91 @@
 </div>
 
 <div class="container">
-	
+	<div class="row-fluid">
+		<div class="span6">
+			<h1>Input</h1>
+			<ul class="nav nav-tabs">
+				<li><a href="#input-microphone" data-toggle="tab">Microphone</a></li>
+				<li class="active"><a href="#input-file" data-toggle="tab">Input file</a></li>
+			</ul>
+			<div class="tab-content">
+				<div class="tab-pane" id="input-microphone">
+					<p>...</p>
+				</div>
+				<div class="tab-pane active" id="input-file">
+					<div class="form-horizontal">
+						<div class="control-group">
+							<label class="control-label" for="audio-file-input">Input file</label>
+							<div class="controls">
+								<input type="file" id="audio-file-input"/>
+							</div>
+						</div>
+						<div class="btn-group">
+							<button class="btn btn-primary btn-large" type="button" id="recognize">Recognize</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="span6">
+			<h1>Models</h1>
+			<ul class="nav nav-tabs">
+				<li class="active"><a href="#models-default" data-toggle="tab">Default models</a></li>
+				<li><a href="#models-file" data-toggle="tab">Custom models file</a></li>
+				<li><a href="#models-input" data-toggle="tab">Custom models input</a></li>
+			</ul>
+			<div class="tab-content">
+				<div class="tab-pane active" id="models-default">
+					<p class="lead">
+						<a href="json/models.json" target="_blank">Default models file</a>
+					</p>
+				</div>
+				<div class="tab-pane" id="models-file">
+					<div class="form-horizontal">
+						<div class="control-group">
+							<label class="control-label" for="models-file-input">Models file</label>
+							<div class="controls">
+								<input type="file" id="models-file-input"/>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane" id="models-input">
+					<div class="form-horizontal">
+						<div class="control-group">
+							<label class="control-label" for="models-data-input">Models data</label>
+							<div class="controls">
+								<textarea id="models-data-input" rows="10"></textarea>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<hr />
+
+	<div style="text-align: center;">
+		<audio id="audio-element"
+			controls="true"
+			style="width: 100%;">
+		</audio><br />
+		<canvas id="fft" width="512" height="200" class="img-polaroid"></canvas>
+	</div>
 </div>
 
 <script src="http://code.jquery.com/jquery-latest.js"></script>
 <script src="js/lib/bootstrap.min.js"></script>
+<script src="js/lib/utils.js"></script>
+<script src="js/lib/inherit.js"></script>
+<script src="js/lib/observable.js"></script>
+<script src="js/lib/options.js"></script>
+<script src="js/lib/math.js"></script>
+<script src="js/lib/voice-analysis.js"></script>
+<script src="js/lib/voice-comparison.js"></script>
+<script src="js/lib/voice-recognition.js"></script>
+
+<script src="js/pages/voice-recognition.js"></script>
 </body>
 </html>

@@ -1,0 +1,5 @@
+
+
+$('#recognize').click(function() {
+
+});
