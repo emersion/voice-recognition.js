@@ -146,6 +146,11 @@ VoiceComparison.prototype = {
 		});
 
 		this._updateStatus(3);
+
+		return {
+			avg: avg,
+			std: std
+		};
 	},
 	exportComparedData: function exportComparedData() {
 		var out = 'Index;Deviation';

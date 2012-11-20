@@ -24,7 +24,7 @@
 			sum += numArr[ i ];
 		}
 
-		return Utils.Math.getNumWithSetDec( (sum / (range[1] - range[0]) ), numOfDec );
+		return Utils.Math.getNumWithSetDec( (sum / (range[1] - range[0] + 1)), numOfDec );
 	};
 	Utils.Math.getVariance = function getVariance(numArr, numOfDec, range) {
 		range = range || [0, numArr.length - 1];
@@ -36,7 +36,7 @@
 		while( i-- && i >= range[0] ){
 			v += Math.pow( (numArr[ i ] - avg), 2 );
 		}
-		v /= range[1] - range[0];
+		v /= range[1] - range[0] + 1;
 		return Utils.Math.getNumWithSetDec(v, numOfDec);
 	};
 	Utils.Math.getStandardDeviation = function getStandardDeviation(numArr, numOfDec, range) {

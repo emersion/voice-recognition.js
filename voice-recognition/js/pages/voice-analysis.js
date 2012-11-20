@@ -16,7 +16,9 @@ var comparison;
 var $globalControls = {
 	play: $('#audio-element-play'),
 	pause: $('#audio-element-pause'),
-	processData: $('#process-data')
+	processData: $('#process-data'),
+
+	exportDataOptions: $('#export-data-model-options')
 };
 $globalControls.play.bind('click', function() {
 	var analyses = VoiceAnalysis.items();
@@ -71,7 +73,8 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 			title: $('#audio-file-name-' + i),
 			processData: $('#process-data-' + i),
 			exportCSV: $('#export-data-csv-' + i),
-			exportJSON: $('#export-data-json-' + i)
+			exportJSON: $('#export-data-json-' + i),
+			exportModel: $('#export-data-model-' + i)
 		};
 
 		var analysis = VoiceAnalysis.build($controls);
@@ -88,6 +91,32 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 		});
 		$controls.exportJSON.bind('click', function() {
 			analysis.exportData('json');
+		});
+		$controls.exportModel.bind('click', function() {
+			var allVoiceData = analysis.normalizedData(), voiceData = {
+				magnitude: [],
+				time: []
+			};
+
+			//Only keep interesting data
+			for (var i = 0; i < allVoiceData.magnitude.length; i++) {
+				var time = allVoiceData.time[i];
+
+				if (time >= 0 && time <= 100) {
+					voiceData.magnitude.push(allVoiceData.magnitude[i]);
+					voiceData.time.push(time);
+				}
+			}
+
+			var data = {
+				name: analysis.name(),
+				gender: 'm',
+				speaker: '',
+				micro: '',
+				data: voiceData
+			};
+
+			Utils.Export.exportJSON(data);
 		});
 
 		analysis.bind('inputchange', function(data) {
@@ -115,6 +144,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 			if (status > 2) {
 				$controls.exportCSV.prop('disabled', false);
 				$controls.exportJSON.prop('disabled', false);
+				$controls.exportModel.prop('disabled', false);
 			}
 
 			if (Utils.Options.get('voice.fnChaining')) {

@@ -12,7 +12,7 @@
 <div class="navbar navbar-inverse navbar-static-top">
 	<div class="navbar-inner">
 		<div class="container">
-			<a class="brand" href="index.html">Javascript voice recognition</a>
+			<a class="brand" href="index.html">voice-recognition.js</a>
 			<div class="nav-collapse collapse">
 				<ul class="nav">
 					<li>
@@ -40,7 +40,10 @@
 			</ul>
 			<div class="tab-content">
 				<div class="tab-pane" id="input-microphone">
-					<p>...</p>
+					<div class="btn-group">
+						<button class="btn btn-primary btn-large" type="button" id="speak">Speak</button>
+						<button class="btn btn-large" type="button" id="speak-stop" disabled="disabled">Stop</button>
+					</div>
 				</div>
 				<div class="tab-pane active" id="input-file">
 					<div class="form-horizontal">
@@ -67,7 +70,7 @@
 			<div class="tab-content">
 				<div class="tab-pane active" id="models-default">
 					<p class="lead">
-						<a href="json/models.json" target="_blank">Default models file</a>
+						Use <a href="json/models.json" target="_blank">default models file</a>.
 					</p>
 				</div>
 				<div class="tab-pane" id="models-file">
@@ -93,8 +96,36 @@
 			</div>
 		</div>
 	</div>
-
+	
 	<hr />
+	
+	<div id="global-progress-container" class="hide">
+		<div class="progress">
+			<div class="bar" id="global-progress-bar"></div>
+		</div>
+		<p id="global-progress-msg"></p>
+	</div>
+	
+	<div id="result-container" class="hide">
+		<h1>Result</h1>
+
+		<div id="result" class="well well-small">
+			<div class="row-fluid">
+				<div class="span6">
+					<p class="lead">
+						You said : "<span id="result-name"></span>"
+					</p>
+				</div>
+				<div class="span6">
+					<p>
+						Avg : <span id="result-avg"></span><br />
+						Std : <span id="result-std"></span><br />
+						Error : <span id="result-error"></span>
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
 
 	<div style="text-align: center;">
 		<audio id="audio-element"
@@ -102,6 +133,46 @@
 			style="width: 100%;">
 		</audio><br />
 		<canvas id="fft" width="512" height="200" class="img-polaroid"></canvas>
+	</div>
+	
+	<div class="form-horizontal">
+		<h1>Options</h1>
+		
+		<h2>Features</h2>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox" for="options-logMessages"><input type="checkbox" id="options-logMessages" /> Log messages in console</label>
+				<label class="checkbox" for="options-showFFT"><input type="checkbox" id="options-showFFT" checked="checked" /> Show FFT</label>
+			</div>
+		</div>
+		
+		<h2>Voice delimiting</h2>
+		<div class="control-group">
+			<label class="control-label" for="options-tolerance">Tolerance</label>
+			<div class="controls">
+				<input type="number" value="6" id="options-tolerance" class="input-mini"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="options-precision">Precision</label>
+			<div class="controls">
+				<input type="number" value="6" id="options-precision" class="input-mini"/>
+			</div>
+		</div>
+		
+		<h2>Voice shifting</h2>
+		<div class="control-group">
+			<label class="control-label" for="options-tolerance">Max. point shifting</label>
+			<div class="controls">
+				<input type="number" value="5" id="options-maxPtShift" class="input-mini"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="options-precision">Tolerated ratio</label>
+			<div class="controls">
+				<input type="number" value="3" id="options-toleratedRatio" class="input-mini"/>
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -112,6 +183,7 @@
 <script src="js/lib/observable.js"></script>
 <script src="js/lib/options.js"></script>
 <script src="js/lib/math.js"></script>
+<script src="js/lib/progress.js"></script>
 <script src="js/lib/voice-analysis.js"></script>
 <script src="js/lib/voice-comparison.js"></script>
 <script src="js/lib/voice-recognition.js"></script>

@@ -98,10 +98,14 @@ var VoiceAnalysis = function VoiceAnalysis(options) {
 	this._id = options.id;
 	this._$controls = options.controls;
 	this._status = 0;
+	this._name = 'Audio input #' + (this.id() + 1);
 };
 VoiceAnalysis.prototype = {
 	id: function getId() {
 		return this._id;
+	},
+	name: function getName() {
+		return this._name;
 	},
 	control: function getControl(name) {
 		return this._$controls[name];
@@ -224,6 +228,8 @@ VoiceAnalysis.prototype = {
 		this._dataIndex++;
 	},
 	processData: function processData() {
+		this.notify('start');
+
 		var tolerance = Utils.Options.get('voice.analysis.tolerance'),
 		precision = Utils.Options.get('voice.analysis.precision');
 
@@ -289,6 +295,8 @@ VoiceAnalysis.prototype = {
 		}
 
 		this._updateStatus(3);
+
+		this.notify('complete');
 	},
 	exportData: function exportData(format) {
 		format = format || 'json';
