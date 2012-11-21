@@ -54,7 +54,7 @@
 							</div>
 						</div>
 						<div class="btn-group">
-							<button class="btn btn-primary btn-large" type="button" id="recognize">Recognize</button>
+							<button class="btn btn-primary btn-large" type="button" id="recognize" disabled="disabled">Recognize</button>
 						</div>
 					</div>
 				</div>
@@ -113,14 +113,14 @@
 			<div class="row-fluid">
 				<div class="span6">
 					<p class="lead">
-						You said : "<span id="result-name"></span>"
+						<span id="result-sentence"></span>
 					</p>
 				</div>
 				<div class="span6">
 					<p>
-						Avg : <span id="result-avg"></span><br />
-						Std : <span id="result-std"></span><br />
-						Error : <span id="result-error"></span>
+						Deviation rate : <span id="result-avg"></span><br />
+						Standard deviation : <span id="result-std"></span><br />
+						Error rate : <span id="result-error"></span>
 					</p>
 				</div>
 			</div>
@@ -132,7 +132,7 @@
 			controls="true"
 			style="width: 100%;">
 		</audio><br />
-		<canvas id="fft" width="512" height="200" class="img-polaroid"></canvas>
+		<canvas id="fft" height="200" class="img-polaroid"></canvas>
 	</div>
 	
 	<div class="form-horizontal">

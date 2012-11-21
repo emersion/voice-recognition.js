@@ -70,7 +70,7 @@ VoiceRecognition.prototype = {
 		var nbr = 0;
 
 		for (var i = 0; i < this._models.length; i++) {
-			nbr += modelSet.models.length;
+			nbr += this._models[i].models.length;
 		}
 
 		return nbr;
@@ -127,8 +127,6 @@ VoiceRecognition.prototype = {
 			})(this._models[i]);
 		}
 
-		var modelSetName = this._models[modelSetIndex].name;
-
 		this._data = {
 			models: {
 				avgs: avgs,
@@ -139,15 +137,28 @@ VoiceRecognition.prototype = {
 				stds: modelSetsStds
 			}
 		};
+
+		var modelsAvgs = [];
+		for (var i = 0; i < this._data.modelSets.avgs.length; i++) {
+			modelsAvgs.push(this._data.modelSets.avgs[i]);
+		}
+
+		modelsAvgs.sort();
+
+		this._stats = {
+			avgError: Utils.Math.getNumWithSetDec(modelsAvgs[0] / modelsAvgs[1])
+		};
+
+		var modelSetName = this._models[modelSetIndex].name;
 		this._result = modelSetIndex;
 
 		Utils.logMessage('Recognition complete');
 		Utils.logMessage('---------');
 		Utils.logMessage(this._data);
-		console.log(this._data);
 
 		this.notify('complete', {
 			data: this._data,
+			stats: this._stats,
 			result: {
 				index: modelSetIndex,
 				name: modelSetName
@@ -156,6 +167,7 @@ VoiceRecognition.prototype = {
 
 		return {
 			data: this._data,
+			stats: this._stats,
 			result: {
 				index: modelSetIndex,
 				name: modelSetName

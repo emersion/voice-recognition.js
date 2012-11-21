@@ -77,6 +77,9 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 			exportModel: $('#export-data-model-' + i)
 		};
 
+		var canvasMargin = $controls.canvas.outerWidth(true) - $controls.canvas.width();
+		$controls.canvas.attr('width', ($controls.canvas.parent().width() - canvasMargin) + 'px');
+
 		var analysis = VoiceAnalysis.build($controls);
 
 		$controls.fileInput.bind('change', function() {

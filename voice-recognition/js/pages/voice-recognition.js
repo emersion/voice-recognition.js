@@ -16,7 +16,7 @@ var $recognitionControls = {
 	globalProgressBar: $('#global-progress-bar'),
 	globalProgressMsg: $('#global-progress-msg'),
 	resultContainer: $('#result-container'),
-	resultName: $('#result-name'),
+	resultSentence: $('#result-sentence'),
 	resultAvg: $('#result-avg'),
 	resultStd: $('#result-std'),
 	resultError: $('#result-error'),
@@ -28,6 +28,9 @@ var $recognitionControls = {
 
 	defaultModelsTab: $('#models-default')
 };
+
+var canvasMargin = $recognitionControls.canvas.outerWidth(true) - $recognitionControls.canvas.width();
+$recognitionControls.canvas.attr('width', ($recognitionControls.canvas.parent().width() - canvasMargin) + 'px');
 
 var globalProgress = new Utils.Progress({
 	parts: 4
@@ -53,7 +56,10 @@ var analysis = VoiceAnalysis.build({
 	canvas: $recognitionControls.canvas
 });
 
-$recognitionControls.audio.bind('play', function() {
+$recognitionControls.audio.bind('playing', function() {
+	analysis.reset();
+
+	globalProgress.value(0);
 	globalProgress.partComplete();
 	globalProgress.message('Retrieving input data...');
 }).bind('ended', function() {
@@ -74,6 +80,9 @@ analysis.bind('complete', function() {
 		recognition.recognize();
 	});
 });
+analysis.bind('inputchange', function() {
+	$recognitionControls.recognize.prop('disabled', false);
+});
 
 analysis.init();
 
@@ -86,35 +95,59 @@ recognition.bind('comparestart', function(data) {
 	globalProgress.message('Comparing with '+data.model.name()+'...');
 });
 recognition.bind('comparecomplete', function(data) {
+	globalProgress.partComplete(1 / recognition.countVoiceModels());
 	globalProgress.message('Compared with '+data.model.name()+'.');
 });
 recognition.bind('complete', function(data) {
-	globalProgress.partComplete();
+	globalProgress.value(100);
 	globalProgress.message('Recognition done.');
 
 	var avg = data.data.modelSets.avgs[data.result.index],
 	std = data.data.modelSets.stds[data.result.index];
 
 	var deviationRange = [0, 1.5],
-	factor = avg / (deviationRange[1] - deviationRange[0]),
-	resultClass;
-	if (factor <= 0.33) {
-		resultClass = 'text-success';
-	} else if (factor <= 0.66) {
-		resultClass = 'text-warning';
-	} else {
-		resultClass = 'text-error';
-	}
+	avgFactor = avg / (deviationRange[1] - deviationRange[0]);
+
+	var stdRange = [0, 0.5],
+	stdFactor = std / (stdRange[1] - stdRange[0]);
+	
+	var resultClasses = ['text-success', 'text-warning', 'text-error'];
+	var getResultClass = function(factor) {
+		if (factor <= 0.33) {
+			return resultClasses[0];
+		} else if (factor <= 0.66) {
+			return resultClasses[1];
+		} else {
+			return resultClasses[2];
+		}
+	};
+	var getSentence = function(value, factor) {
+		var sentences = ['You said : "'+value+'" !','You probably said : "'+value+'".','Did you said : "'+value+'" ?'];
+		if (factor <= 0.33) {
+			return sentences[0];
+		} else if (factor <= 0.66) {
+			return sentences[1];
+		} else {
+			return sentences[2];
+		}
+	};
 
 	var error = 0;
 
 	$recognitionControls.resultAvg
-		.removeClass('text-success text-warning text-error')
-		.addClass(resultClass)
-		.html(avg);
-	$recognitionControls.resultStd.html(std);
-	$recognitionControls.resultError.html(error);
-	$recognitionControls.resultName.html(data.result.name);
+		.removeClass(resultClasses.join(' '))
+		.addClass(getResultClass(avgFactor))
+		.html(avg * 100 + '%');
+	$recognitionControls.resultStd
+		.removeClass(resultClasses.join(' '))
+		.addClass(getResultClass(stdFactor))
+		.html(std * 100 + '%');
+	$recognitionControls.resultError
+		.removeClass(resultClasses.join(' '))
+		.addClass(getResultClass(data.stats.avgError))
+		.html(data.stats.avgError * 100 + '%');
+
+	$recognitionControls.resultSentence.html(getSentence(data.result.name, data.stats.avgError));
 
 	$recognitionControls.resultContainer.slideDown();
 });
@@ -152,7 +185,5 @@ var file = $recognitionControls.fileInput[0].files[0];
 analysis.setInputFile(file);
 
 $recognitionControls.recognize.click(function() {
-	globalProgress.value(0);
-
 	$recognitionControls.audio[0].play();
 });

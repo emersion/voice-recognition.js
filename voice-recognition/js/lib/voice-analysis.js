@@ -175,6 +175,16 @@ VoiceAnalysis.prototype = {
 
 		this._updateStatus(1);
 	},
+	reset: function reset() {
+		this._dataIndex = 0;
+		this._maxMagnitude = 0;
+
+		this._magnitudes = new Float32Array(1024);
+		this._magnitudesIndex = new Float32Array(1024);
+		this._magnitudesTime = new Float32Array(1024);
+
+		this._updateStatus(1);
+	},
 	_audioAvailable: function _audioAvailable(event) {
 		var fb = event.frameBuffer,
 		t  = event.time, /* unused, but it's there */
