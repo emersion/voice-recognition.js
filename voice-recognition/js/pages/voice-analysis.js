@@ -8,6 +8,7 @@ Utils.Options.register('voice.fnChaining', 'boolean', '#options-fnChaining');
 Utils.Options.register('voice.analysis.tolerance', 'number', '#options-tolerance');
 Utils.Options.register('voice.analysis.precision', 'number', '#options-precision');
 
+Utils.Options.register('voice.shifting.enabled', 'boolean', '#options-enable-shifting');
 Utils.Options.register('voice.shifting.maxPtShift', 'number', '#options-maxPtShift');
 Utils.Options.register('voice.shifting.toleratedRatio', 'number', '#options-toleratedRatio');
 
@@ -86,6 +87,9 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 			var file = $controls.fileInput[0].files[0];
 			analysis.setInputFile(file);
 		});
+		$controls.audio.bind('playing', function() {
+			analysis.reset();
+		});
 		$controls.processData.bind('click', function() {
 			analysis.processData();
 		});
@@ -96,7 +100,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 			analysis.exportData('json');
 		});
 		$controls.exportModel.bind('click', function() {
-			var allVoiceData = analysis.normalizedData(), voiceData = {
+			var allVoiceData = analysis.standardizedData(), voiceData = {
 				magnitude: [],
 				time: []
 			};
@@ -174,6 +178,8 @@ var analyses = VoiceAnalysis.items();
 comparison = VoiceComparison.build(analyses[0], analyses[1]);
 
 var $comparisonControls = {
+	prepareData: $('#prepare-data'),
+	prepareAndExportData: $('#prepare-export-data'),
 	shiftData: $('#shift-data'),
 	shiftAndExportData: $('#shift-export-data'),
 	compareData: $('#compare-data'),
@@ -182,19 +188,24 @@ var $comparisonControls = {
 	resultAvg: $('#result-deviation'),
 	resultStd: $('#result-std')
 };
+$comparisonControls.prepareData.bind('click', function() {
+	comparison.prepareData();
+});
 $comparisonControls.shiftData.bind('click', function() {
 	comparison.shiftData();
 });
 $comparisonControls.compareData.bind('click', function() {
-	comparison.shiftData();
 	comparison.compareData();
+});
+$comparisonControls.prepareAndExportData.bind('click', function() {
+	comparison.prepareData();
+	comparison.exportPreparedData();
 });
 $comparisonControls.shiftAndExportData.bind('click', function() {
 	comparison.shiftData();
 	comparison.exportShiftedData();
 });
 $comparisonControls.comparedAndExportData.bind('click', function() {
-	comparison.shiftData();
 	comparison.compareData();
 	comparison.exportComparedData();
 });
@@ -209,11 +220,16 @@ comparison.bind('updatestatus', function(data) {
 	}
 
 	if (status > 0) {
+		$comparisonControls.prepareData.prop('disabled', false);
+		$comparisonControls.prepareAndExportData.prop('disabled', false);
+	}
+
+	if (status > 1) {
 		$comparisonControls.shiftData.prop('disabled', false);
 		$comparisonControls.shiftAndExportData.prop('disabled', false);
 	}
 
-	if (status > 1) {
+	if (status > 2) {
 		$comparisonControls.compareData.prop('disabled', false);
 		$comparisonControls.comparedAndExportData.prop('disabled', false);
 	}
@@ -221,9 +237,12 @@ comparison.bind('updatestatus', function(data) {
 	if (Utils.Options.get('voice.fnChaining')) {
 		var specificFunctions = {
 			1: function() {
-				comparison.shiftData();
+				comparison.prepareData();
 			},
 			2: function() {
+				comparison.shiftData();
+			},
+			3: function() {
 				comparison.compareData();
 			}
 		};
@@ -253,7 +272,7 @@ comparison.bind('compare', function(data) {
 		.addClass(resultClass)
 		.html(avg);
 
-	$comparisonControls.resultStd.html(avg);
+	$comparisonControls.resultStd.html(std);
 
 	$comparisonControls.resultContainer.slideDown();
 })

@@ -22,9 +22,9 @@ VoiceModel.prototype = {
 		return this._micro;
 	},
 	range: function getRange() {
-		return [0, this.normalizedData().magnitude.length];
+		return [0, this.standardizedData().magnitude.length - 1];
 	},
-	normalizedData: function getNormalizedData() {
+	standardizedData: function getStandardizedData() {
 		return this._data;
 	},
 	status: function getStatus() {
@@ -102,9 +102,15 @@ VoiceRecognition.prototype = {
 							comparison: comparison
 						});
 
-						comparison.checkVoiceAnalyses();
-						comparison.shiftData();
 						var result = comparison.compareData();
+
+						if (result === false) {
+							that.notify('compareerror', {
+								model: model,
+								comparison: comparison
+							});
+							return;
+						}
 
 						avgs[i][j] = result.avg;
 						stds[i][j] = result.std;
@@ -118,7 +124,7 @@ VoiceRecognition.prototype = {
 				}
 
 				modelSetsAvgs[i] = Utils.Math.getAverageFromNumArr(avgs[i]);
-				modelSetsStds[i] = Utils.Math.getStandardDeviation(stds[i]);
+				modelSetsStds[i] = Utils.Math.getAverageFromNumArr(stds[i]);
 
 				if (typeof modelSetMinAvg == 'undefined' || modelSetsAvgs[i] < modelSetMinAvg) {
 					modelSetMinAvg = modelSetsAvgs[i];

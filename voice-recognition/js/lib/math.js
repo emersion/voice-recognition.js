@@ -18,6 +18,10 @@
 	Utils.Math.getAverageFromNumArr = function getAverageFromNumArr(numArr, numOfDec, range) {
 		range = range || [0, numArr.length - 1];
 
+		if (range[1] - range[0] <= 0) {
+			return Number.NaN;
+		}
+
 		var i = range[1] + 1,
 			sum = 0;
 		while( i-- && i >= range[0] ){
@@ -28,6 +32,10 @@
 	};
 	Utils.Math.getVariance = function getVariance(numArr, numOfDec, range) {
 		range = range || [0, numArr.length - 1];
+
+		if (range[1] - range[0] <= 0) {
+			return Number.NaN;
+		}
 
 		var avg = Utils.Math.getAverageFromNumArr(numArr, numOfDec, range), 
 			i = range[1] + 1,

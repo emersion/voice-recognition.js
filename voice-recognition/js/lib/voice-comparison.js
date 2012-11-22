@@ -27,54 +27,156 @@ VoiceComparison.prototype = {
 
 		this._updateStatus(1);
 	},
-	shiftData: function shiftData() {
-		var left = this._analyses[0], right = this._analyses[1],
-		leftNormalizedData = left.normalizedData(), rightNormalizedData = right.normalizedData();
+	prepareData: function prepareData() {
+		if (this.status() < 1) {
+			if (this.checkVoiceAnalyses() === false) {
+				return false;
+			}
+		}
 
-		var maxDiff = Utils.Options.get('voice.shifting.maxPtShift'),
-		toleratedRatio = Utils.Options.get('voice.shifting.toleratedRatio');
+		var left = this._analyses[0], right = this._analyses[1];
+
+		var leftDataLength = left.range()[1] - left.range()[0],
+		rightDataLength = right.range()[1] - right.range()[0];
+
+		var thicker, thickerPos, finer, finerPos;
+		if (leftDataLength > rightDataLength) {
+			thicker = left;
+			thickerPos = 'left';
+			finer = right;
+			finerPos = 'right';
+		} else {
+			thicker = right;
+			thickerPos = 'right';
+			finer = left;
+			finerPos = 'left';
+		}
+
+		var thickerStandardizedData = thicker.standardizedData(),
+		finerStandardizedData = finer.standardizedData()
 
 		var comparableData = {
 			right: [],
-			left: []
+			left: [],
+			time: []
 		};
 
-		var lastLeftIndex = left.range()[0] - 1,
-		rightPercentageTime = 0,
-		rightMaxPercentage = 0;
-		for (var rightIndex = right.range()[0]; rightIndex <= right.range()[1]; rightIndex++) {
-			rightPercentageTime = rightNormalizedData.time[rightIndex];
-			rightMaxPercentage = rightNormalizedData.magnitude[rightIndex];
+		var lastFinerIndex = finer.range()[0] - 1,
+		thickerTime = 0,
+		finerTime = 0,
+		thickerMagnitude = 0,
+		finerMagnitude = 0;
+		for (var thickerIndex = thicker.range()[0]; thickerIndex <= thicker.range()[1]; thickerIndex++) {
+			thickerTime = thickerStandardizedData.time[thickerIndex];
+			thickerMagnitude = thickerStandardizedData.magnitude[thickerIndex];
 
 			Utils.logMessage('---------');
-			Utils.logMessage('Right : ', rightIndex, rightPercentageTime, rightMaxPercentage);
+			Utils.logMessage('Thicker ('+thickerPos+') : ', thickerIndex, thickerTime, thickerMagnitude);
+
+			for (var finerIndex = finer.range()[0]; finerIndex <= finer.range()[1]; finerIndex++) {
+				finerTime = finerStandardizedData.time[finerIndex];
+				finerMagnitude = finerStandardizedData.magnitude[finerIndex];
+				
+				if (finerTime >= thickerTime) {
+					break;
+				}
+			}
+
+			var finerMagnitudeForThickerTime;
+			if (finerTime == thickerTime) {
+				finerMagnitudeForThickerTime = finerMagnitude;
+
+				Utils.logMessage('Finer ('+finerPos+') : ', finerIndex, finerTime, finerMagnitude);
+			} else {
+				var finerPreviousIndex = finerIndex - 1,
+				finerPreviousTime = finerStandardizedData.time[finerPreviousIndex],
+				finerPreviousMagnitude = finerStandardizedData.magnitude[finerPreviousIndex];
+
+				var slope = (finerPreviousMagnitude - finerMagnitude) / (finerPreviousTime - finerTime),
+				deltaTime = thickerTime - finerPreviousTime;
+
+				finerMagnitudeForThickerTime = finerPreviousMagnitude + deltaTime * slope;
+
+				Utils.logMessage('Finer ('+finerPos+') : ', [finerPreviousIndex, finerIndex], [finerPreviousTime, finerTime], [finerPreviousMagnitude, finerMagnitude], finerMagnitudeForThickerTime);
+			}
+
+			comparableData[thickerPos].push(thickerMagnitude);
+			comparableData[finerPos].push(finerMagnitudeForThickerTime);
+			comparableData.time.push(thickerTime);
+		}
+
+		this._data = comparableData;
+
+		this._updateStatus(2);
+
+		return comparableData;
+	},
+	exportPreparedData: function exportPreparedData() {
+		var out = 'Time;Right;Left';
+		for (var i = 0; i < this._data.right.length; i++) {
+			out += "\n"+this._data.time[i]+';'+this._data.right[i]+';'+this._data.left[i];
+		}
+		Utils.Export.exportCSV(out);
+	},
+	shiftData: function shiftData() {
+		if (this.status() < 2) {
+			if (this.prepareData() === false) {
+				return false;
+			}
+		}
+
+		var shiftingEnabled = Utils.Options.get('voice.shifting.enabled'),
+		maxDiff = Utils.Options.get('voice.shifting.maxPtShift'),
+		toleratedRatio = Utils.Options.get('voice.shifting.toleratedRatio');
+
+		if (!shiftingEnabled) {
+			this._updateStatus(3);
+			return this._data;
+		}
+
+		var comparableData = {
+			right: [],
+			left: [],
+			time: this._data.time
+		},
+		left = this._data.left,
+		right = this._data.right;
+
+		var lastLeftIndex = -1,
+		rightMagnitude = 0;
+
+		for (var rightIndex = 0; rightIndex < right.length; rightIndex++) {
+			rightMagnitude = right[rightIndex];
+
+			Utils.logMessage('---------');
+			Utils.logMessage('Right : ', rightIndex, rightMagnitude);
 
 			var j = 0,
 			diff = 0,
 			leftIndex = null,
-			leftMaxPercentage = null,
+			leftMagnitude = null,
 			deviation = 0,
 			ratio = 0,
-			leftPercentageTime = 0,
 			isDiffPositive = true;
+
 			do {
-				var leftIndex = lastLeftIndex + 1 + ((isDiffPositive) ? 1 : -1) * diff;
+				leftIndex = lastLeftIndex + 1 + ((isDiffPositive) ? 1 : -1) * diff;
 
-				if (leftIndex >= left.range()[0] && leftIndex <= left.range()[1]) {
-					leftMaxPercentage = leftNormalizedData.magnitude[leftIndex];
+				if (leftIndex >= 0 && leftIndex < left.length) {
+					leftMagnitude = left[leftIndex];
 
-					deviation = Math.abs(rightMaxPercentage - leftMaxPercentage);
-					ratio = deviation / ((rightMaxPercentage + leftMaxPercentage) / 2);
+					deviation = Math.abs(rightMagnitude - leftMagnitude);
+					ratio = deviation / ((rightMagnitude + leftMagnitude) / 2);
 
-					Utils.logMessage(isDiffPositive, rightIndex, leftIndex, rightMaxPercentage, leftMaxPercentage, deviation, ratio, (ratio <= toleratedRatio));
+					Utils.logMessage('Left : ', isDiffPositive, rightIndex, leftIndex, rightMagnitude, leftMagnitude, deviation, ratio, (ratio <= toleratedRatio));
 
 					if (ratio <= toleratedRatio) {
 						break;
 					}
 				} else {
-					Utils.logMessage(isDiffPositive, rightIndex, leftIndex, false);
+					Utils.logMessage('Left : ', isDiffPositive, rightIndex, leftIndex, false);
 
-					leftMaxPercentage = null;
+					leftMagnitude = null;
 					leftIndex = null;
 				}
 
@@ -87,29 +189,37 @@ VoiceComparison.prototype = {
 
 			if (leftIndex === null) {
 				leftIndex = lastLeftIndex + 1;
-				leftMaxPercentage = leftNormalizedData.magnitude[leftIndex];
+				leftMagnitude = left[leftIndex];
 			}
 
-			Utils.logMessage('=>', rightIndex, leftIndex, rightMaxPercentage, leftMaxPercentage);
+			Utils.logMessage('=>', rightIndex, leftIndex, rightMagnitude, leftMagnitude);
 
-			comparableData.right.push(rightMaxPercentage);
-			comparableData.left.push(leftMaxPercentage);
+			comparableData.right.push(rightMagnitude);
+			comparableData.left.push(leftMagnitude);
 
 			lastLeftIndex = leftIndex;
 		}
 
 		this._data = comparableData;
 
-		this._updateStatus(2);
+		this._updateStatus(3);
+
+		return comparableData;
 	},
 	exportShiftedData: function exportShiftedData() {
-		var out = 'Index;Right;Left';
+		var out = 'Time;Right;Left';
 		for (var i = 0; i < this._data.right.length; i++) {
-			out += "\n"+i+';'+this._data.right[i]+';'+this._data.left[i];
+			out += "\n"+this._data.time[i]+';'+this._data.right[i]+';'+this._data.left[i];
 		}
 		Utils.Export.exportCSV(out);
 	},
 	compareData: function compareData() {
+		if (this.status() < 3) {
+			if (this.shiftData() === false) {
+				return false;
+			}
+		}
+
 		var comparableData = this._data;
 
 		var deviations = [];
@@ -145,7 +255,7 @@ VoiceComparison.prototype = {
 			}
 		});
 
-		this._updateStatus(3);
+		this._updateStatus(4);
 
 		return {
 			avg: avg,

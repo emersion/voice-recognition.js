@@ -38,10 +38,12 @@
 		</div>
 		<div class="btn-group">
 			<button class="btn btn-large btn-primary" type="button" id="process-data">Process</button>
+			<button class="btn btn-large btn-primary" type="button" id="prepare-data">Prepare</button>
 			<button class="btn btn-large btn-primary" type="button" id="shift-data">Shift</button>
 			<button class="btn btn-large btn-primary" type="button" id="compare-data">Compare</button>
 		</div>
 		<div class="btn-group">
+			<button class="btn btn-large" type="button" id="prepare-export-data">Prepare &amp; export</button>
 			<button class="btn btn-large" type="button" id="shift-export-data">Shift &amp; export</button>
 			<button class="btn btn-large" type="button" id="compare-export-data">Compare &amp; export</button>
 		</div>
@@ -148,6 +150,11 @@
 		</div>
 		
 		<h2>Voice shifting</h2>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox" for="options-enable-shifting"><input type="checkbox" id="options-enable-shifting" checked="checked"/> Enable voice shifting when comparing</label>
+			</div>
+		</div>
 		<div class="control-group">
 			<label class="control-label" for="options-tolerance">Max. point shifting</label>
 			<div class="controls">

@@ -6,6 +6,7 @@ Utils.Options.register('voice.comparing.showFFT', 'boolean', '#options-showFFT')
 Utils.Options.register('voice.analysis.tolerance', 'number', '#options-tolerance');
 Utils.Options.register('voice.analysis.precision', 'number', '#options-precision');
 
+Utils.Options.register('voice.shifting.enabled', 'boolean', '#options-enable-shifting');
 Utils.Options.register('voice.shifting.maxPtShift', 'number', '#options-maxPtShift');
 Utils.Options.register('voice.shifting.toleratedRatio', 'number', '#options-toleratedRatio');
 
@@ -21,12 +22,18 @@ var $recognitionControls = {
 	resultStd: $('#result-std'),
 	resultError: $('#result-error'),
 
+	inputMicrophoneTab: $('#input-microphone'),
 	inputFileTab: $('#input-file'),
 
 	fileInput: $('#audio-file-input'),
 	recognize: $('#recognize'),
 
-	defaultModelsTab: $('#models-default')
+	defaultModelsTab: $('#models-default'),
+	fileModelsTab: $('#models-file'),
+	dataModelsTab: $('#models-data'),
+
+	fileModelsInput: $('#models-file-input'),
+	dataModelsInput: $('#models-data-input')
 };
 
 var canvasMargin = $recognitionControls.canvas.outerWidth(true) - $recognitionControls.canvas.width();
@@ -55,6 +62,7 @@ var analysis = VoiceAnalysis.build({
 	audio: $recognitionControls.audio,
 	canvas: $recognitionControls.canvas
 });
+analysis.init();
 
 $recognitionControls.audio.bind('playing', function() {
 	analysis.reset();
@@ -84,8 +92,6 @@ analysis.bind('inputchange', function() {
 	$recognitionControls.recognize.prop('disabled', false);
 });
 
-analysis.init();
-
 var recognition = VoiceRecognition.build();
 
 recognition.bind('start', function() {
@@ -108,7 +114,7 @@ recognition.bind('complete', function(data) {
 	var deviationRange = [0, 1.5],
 	avgFactor = avg / (deviationRange[1] - deviationRange[0]);
 
-	var stdRange = [0, 0.5],
+	var stdRange = [0, 0.7],
 	stdFactor = std / (stdRange[1] - stdRange[0]);
 	
 	var resultClasses = ['text-success', 'text-warning', 'text-error'];
@@ -122,7 +128,7 @@ recognition.bind('complete', function(data) {
 		}
 	};
 	var getSentence = function(value, factor) {
-		var sentences = ['You said : "'+value+'" !','You probably said : "'+value+'".','Did you said : "'+value+'" ?'];
+		var sentences = ['You said : "'+value+'" !','You probably said : "'+value+'".','Did you say : "'+value+'" ?'];
 		if (factor <= 0.33) {
 			return sentences[0];
 		} else if (factor <= 0.66) {
@@ -131,8 +137,6 @@ recognition.bind('complete', function(data) {
 			return sentences[2];
 		}
 	};
-
-	var error = 0;
 
 	$recognitionControls.resultAvg
 		.removeClass(resultClasses.join(' '))
@@ -157,7 +161,7 @@ var setRecognitionModels = function(callback) {
 
 	globalProgress.message('Loading models...');
 
-	if ($recognitionControls.inputFileTab.is('.active')) {
+	if ($recognitionControls.defaultModelsTab.is('.active')) {
 		$.ajax({
 			url: 'json/models.json',
 			dataType: 'json',
@@ -173,6 +177,57 @@ var setRecognitionModels = function(callback) {
 				globalProgress.error('Can\'t retrieve models : '+textStatus+' '+errorThrown);
 			}
 		});
+	} else if ($recognitionControls.fileModelsTab.is('.active')) {
+		var files = $recognitionControls.fileModelsInput[0].files;
+
+		if (!files || !files.length) {
+			globalProgress.error('Please select a models file.');
+			return;
+		}
+
+		var file = files[0];
+
+		if (file.type && file.type != 'application/json') {
+			globalProgress.error('Incorrect models file type. Required type : "application/json" (file extension : ".json").');
+			return;
+		}
+
+		var reader = new FileReader();
+
+		reader.onload = function(event) {
+			try {
+				var json = event.target.result,
+				models = JSON.parse(json);
+			} catch (error) {
+				globalProgress.error('Corrupted models data (error : "'+error.message+'").');
+				return;
+			}
+
+			recognition.setVoiceModels(models);
+
+			globalProgress.partComplete();
+			globalProgress.message('Models loaded.');
+
+			callback();
+		};
+
+		reader.readAsText(file);
+	} else if ($recognitionControls.dataModelsTab.is('.active')) {
+		var json = $recognitionControls.dataModelsInput.val();
+
+		try {
+			var models = JSON.parse(json);
+		} catch (error) {
+			globalProgress.error('Corrupted models data (error : "'+error.message+'").');
+			return;
+		}
+
+		recognition.setVoiceModels(models);
+
+		globalProgress.partComplete();
+		globalProgress.message('Models loaded.');
+
+		callback();
 	}
 };
 

@@ -116,10 +116,10 @@ VoiceAnalysis.prototype = {
 	range: function getRange() {
 		return this._range || [];
 	},
-	normalizedData: function getNormalizedData() {
+	standardizedData: function getStandardizedData() {
 		return {
-			magnitude: this._normalizedMagnitudes,
-			time: this._normalizedTime
+			magnitude: this._standardizedMagnitudes,
+			time: this._standardizedTime
 		};
 	},
 	init: function init() {
@@ -169,7 +169,7 @@ VoiceAnalysis.prototype = {
 
 		this._magnitudes = new Float32Array(1024);
 		this._magnitudesIndex = new Float32Array(1024);
-		this._magnitudesTime = new Float32Array(1024);
+		this._time = new Float32Array(1024);
 
 		this._fft = new FFT(this._frameBufferLength / this._channels, this._rate);
 
@@ -181,7 +181,7 @@ VoiceAnalysis.prototype = {
 
 		this._magnitudes = new Float32Array(1024);
 		this._magnitudesIndex = new Float32Array(1024);
-		this._magnitudesTime = new Float32Array(1024);
+		this._time = new Float32Array(1024);
 
 		this._updateStatus(1);
 	},
@@ -228,7 +228,7 @@ VoiceAnalysis.prototype = {
 		if (this._dataIndex < this._magnitudes.length) {
 			this._magnitudes[this._dataIndex] = maxMagnitude;
 			this._magnitudesIndex[this._dataIndex] = maxMagnitudeIndex;
-			this._magnitudesTime[this._dataIndex] = t;
+			this._time[this._dataIndex] = t;
 		}
 
 		if (this._maxMagnitude < maxMagnitude) {
@@ -240,69 +240,85 @@ VoiceAnalysis.prototype = {
 	processData: function processData() {
 		this.notify('start');
 
+		Utils.logMessage('---------');
+		Utils.logMessage('Standardizing magnitudes...');
+		Utils.logMessage('Max magnitude for this analysis : ' + this._maxMagnitude);
+
+		this._standardizedMagnitudes = [];
+
+		for (var i = 0; i < this._dataIndex; i++) {
+			var magnitude = this._magnitudes[i];
+			this._standardizedMagnitudes[i] = Utils.Math.getNumWithSetDec(magnitude / this._maxMagnitude * 100);
+		}
+
 		var tolerance = Utils.Options.get('voice.analysis.tolerance'),
 		precision = Utils.Options.get('voice.analysis.precision');
 
-		Utils.logMessage('Détermination du début...');
-
 		this._range = [0, this._dataIndex];
 
-		for (var i = 0; i <= this._dataIndex; i++) {
-			var range = [0, i - 1], maxMagnitude = this._magnitudes[i];
+		var requiredFollowingPts = 4,
+		threshold = 8;
 
-			if (range[1] - range[0] > 5) {
-				var avg = Utils.Math.getAverageFromNumArr(this._magnitudes, precision, range),
-				stdDev = Utils.Math.getStandardDeviation(this._magnitudes, precision, range),
-				toleratedDev = stdDev * tolerance;
+		Utils.logMessage('---------');
+		Utils.logMessage('Determining the beginning...');
 
-				Utils.logMessage(i, maxMagnitude, avg, toleratedDev);
+		var startedSince = 0;
+		for (var i = 0; i < this._dataIndex; i++) {
+			var maxMagnitude = this._standardizedMagnitudes[i];
 
-				if (maxMagnitude < avg - toleratedDev || maxMagnitude > avg + toleratedDev) {
-					this._range[0] = i;
-					break;
-				}
+			if (maxMagnitude > threshold) {
+				Utils.logMessage('Peak detected', i, maxMagnitude + ' > ' + threshold);
+				startedSince++;
+			} else if (startedSince) {
+				startedSince = 0;
+			}
+
+			if (startedSince >= requiredFollowingPts) {
+				this._range[0] = i - startedSince;
+				Utils.logMessage('=> Begining detected', this._range[0]);
+				break;
 			}
 		}
 
 		Utils.logMessage('---------');
-		Utils.logMessage('Détermination de la fin...');
+		Utils.logMessage('Determining the end...');
 
-		for (var i = this._dataIndex; i >= 0; i--) {
-			var range = [i + 1, this._dataIndex], maxMagnitude = this._magnitudes[i];
+		var endedSince = 0;
+		for (var i = this._dataIndex - 1; i >= 0; i--) {
+			var maxMagnitude = this._standardizedMagnitudes[i];
 
-			if (range[1] - range[0] > 5) {
-				var avg = Utils.Math.getAverageFromNumArr(this._magnitudes, precision, range),
-				stdDev = Utils.Math.getStandardDeviation(this._magnitudes, precision, range),
-				toleratedDev = stdDev * tolerance;
+			if (maxMagnitude > threshold) {
+				Utils.logMessage('Peak detected', i, maxMagnitude + ' > ' + threshold);
+				endedSince++;
+			} else if (endedSince) {
+				endedSince = 0;
+			}
 
-				Utils.logMessage(i, maxMagnitude, avg, toleratedDev);
-
-				if (maxMagnitude < avg - toleratedDev || maxMagnitude > avg + toleratedDev) {
-					this._range[1] = i;
-					break;
-				}
+			if (endedSince >= requiredFollowingPts) {
+				this._range[1] = i + endedSince;
+				Utils.logMessage('=> End detected', this._range[1]);
+				break;
 			}
 		}
 
 		Utils.logMessage('---------');
-		Utils.logMessage('Normalisation des données...');
+		Utils.logMessage('Standardizing time...');
 
-		this._normalizedMagnitudes = [];
-		this._normalizedTime = [];
+		this._standardizedTime = [];
 
-		var startTime = this._magnitudesTime[this._range[0]],
-		endTime = this._magnitudesTime[this._range[1]],
+		var startTime = this._time[this._range[0]],
+		endTime = this._time[this._range[1]],
 		duration = endTime - startTime;
 
-		for (var i = 0; i <= this._dataIndex; i++) {
-			var magnitude = this._magnitudes[i];
+		Utils.logMessage('Number of points collected : ' + (this._range[1] - this._range[0] + 1));
+		Utils.logMessage('Speaking duration : ' + duration + ' ('+startTime+' -> '+endTime+')');
 
-			this._normalizedMagnitudes[i] = magnitude / this._maxMagnitude * 100;
+		for (var i = 0; i < this._dataIndex; i++) {
+			var t = this._time[i] - startTime;
 
-			var t = this._magnitudesTime[i] - startTime;
-
-			this._normalizedTime[i] = t / duration * 100;
+			this._standardizedTime[i] = Utils.Math.getNumWithSetDec(t / duration * 100);
 		}
+
 
 		this._updateStatus(3);
 
@@ -315,8 +331,8 @@ VoiceAnalysis.prototype = {
 			case 'csv':
 				var out = 'Time;Time (%);Index;Max magnitude;Max magnitude (%)', status = 0;
 
-				for (var i = 0; i <= this._dataIndex; i++) {
-					out += "\n"+this._magnitudesTime[i]+';'+this._normalizedTime[i]+';'+this._magnitudesIndex[i]+';'+this._magnitudes[i]+';'+this._normalizedMagnitudes[i];
+				for (var i = 0; i < this._dataIndex; i++) {
+					out += "\n"+this._time[i]+';'+this._standardizedTime[i]+';'+this._magnitudesIndex[i]+';'+this._magnitudes[i]+';'+this._standardizedMagnitudes[i];
 				}
 
 				Utils.Export.exportCSV(out);
@@ -325,7 +341,7 @@ VoiceAnalysis.prototype = {
 				var dataToExport = {};
 
 				for (var i = this._range[0]; i <= this._range[1]; i++) {
-					dataToExport[this._normalizedTime[i]] = this._normalizedMagnitudes[i];
+					dataToExport[this._standardizedTime[i]] = this._standardizedMagnitudes[i];
 				}
 
 				Utils.Export.exportJSON(dataToExport);
