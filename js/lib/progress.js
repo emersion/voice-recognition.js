@@ -66,10 +66,20 @@
 			if (typeof msg == 'undefined') {
 				return this._error;
 			} else {
-				this._error = true;
+				if (msg === false) {
+					this._error = false;
 
-				this.message(msg);
+					this.notify('update', { value: this.value(), message: this.message(), error: false });
+				} else {
+					this._error = true;
+
+					this.message(msg);
+				}
 			}
+		},
+		reset: function reset() {
+			this.error(false);
+			this.value(0);
 		}
 	};
 	Utils.inherit(Utils.Progress, Utils.Observable);

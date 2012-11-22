@@ -28,6 +28,9 @@ var $recognitionControls = {
 	fileInput: $('#audio-file-input'),
 	recognize: $('#recognize'),
 
+	speakStart: $('#speak-start'),
+	speakStop: $('#speak-stop'),
+
 	defaultModelsTab: $('#models-default'),
 	fileModelsTab: $('#models-file'),
 	dataModelsTab: $('#models-data'),
@@ -53,7 +56,7 @@ globalProgress.bind('update', function(data) {
 		$recognitionControls.globalProgressContainer.slideDown();
 	}
 
-	if (data.value == 100) {
+	if (data.value == 100 && !data.error) {
 		$recognitionControls.globalProgressContainer.slideUp();
 	}
 });
@@ -67,10 +70,10 @@ analysis.init();
 $recognitionControls.audio.bind('playing', function() {
 	analysis.reset();
 
-	globalProgress.value(0);
+	globalProgress.reset();
 	globalProgress.partComplete();
 	globalProgress.message('Retrieving input data...');
-}).bind('ended', function() {
+}).bind('ended pause', function() {
 	globalProgress.message('Input data retrieved.');
 
 	analysis.processData();
@@ -240,5 +243,47 @@ var file = $recognitionControls.fileInput[0].files[0];
 analysis.setInputFile(file);
 
 $recognitionControls.recognize.click(function() {
+	globalProgress.reset();
+
 	$recognitionControls.audio[0].play();
+});
+
+//Microphone input
+$recognitionControls.speakStart.click(function() {
+	globalProgress.reset();
+	globalProgress.message('Capturing microphone...');
+
+	navigator.getMedia = (navigator.getUserMedia ||
+		navigator.webkitGetUserMedia ||
+		navigator.mozGetUserMedia ||
+		navigator.msGetUserMedia);
+
+	if (navigator.getMedia) {
+		navigator.getMedia({
+			video: false,
+			audio: true
+		}, function(stream) {
+			$recognitionControls.speakStop.prop('disabled', false);
+			$(this).prop('disabled', true);
+
+			if (navigator.mozGetUserMedia) {
+				$recognitionControls.audio[0].mozSrcObject = stream;
+			} else {
+				var vendorURL = window.URL || window.webkitURL;
+				$recognitionControls.audio[0].src = vendorURL ? vendorURL.createObjectURL(stream) : stream;
+			}
+
+			$recognitionControls.audio[0].play();
+		}, function(err) {
+			globalProgress.error('Can\'t capture microphone : '+err);
+		});
+	} else { //Flash fallback
+		globalProgress.error('Not implemented yet...');
+	}
+});
+$recognitionControls.speakStop.click(function() {
+	$recognitionControls.speakStart.prop('disabled', false);
+	$(this).prop('disabled', true);
+
+	$recognitionControls.audio[0].pause();
 });

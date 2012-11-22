@@ -132,7 +132,7 @@ VoiceAnalysis.prototype = {
 			.bind('loadedmetadata', function() {
 				that._loadedMetadata();
 			})
-			.bind('ended', function() {
+			.bind('ended pause', function() {
 				that._updateStatus(2);
 			});
 
@@ -186,6 +186,10 @@ VoiceAnalysis.prototype = {
 		this._updateStatus(1);
 	},
 	_audioAvailable: function _audioAvailable(event) {
+		if (this.status() < 1) {
+			this.reset();
+		}
+
 		var fb = event.frameBuffer,
 		t  = event.time, /* unused, but it's there */
 		signal = new Float32Array(fb.length / this._channels),
@@ -238,6 +242,10 @@ VoiceAnalysis.prototype = {
 		this._dataIndex++;
 	},
 	processData: function processData() {
+		if (this.status() < 2 || !this._magnitudes) {
+			return false;
+		}
+
 		this.notify('start');
 
 		Utils.logMessage('---------');
