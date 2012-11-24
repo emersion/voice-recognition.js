@@ -51,20 +51,38 @@
 	
 	<div class="row-fluid">
 		<div class="span6">
-			<h1 id="audio-file-name-0">Input file #1</h1>
-			<div class="form-horizontal">
-				<div class="control-group">
-					<label class="control-label" for="audio-file-input-0">Input file</label>
-					<div class="controls">
-						<input type="file" id="audio-file-input-0"/>
+			<h1 id="audio-file-name-0">Audio input #1</h1>
+
+			<ul class="nav nav-tabs">
+				<li class="active"><a href="#input-microphone-0" data-toggle="tab">Microphone</a></li>
+				<li><a href="#input-file-0" data-toggle="tab">Input file</a></li>
+			</ul>
+			<div class="tab-content">
+				<div class="tab-pane active" id="input-microphone-0">
+					<div class="btn-group">
+						<button class="btn btn-primary btn-large" type="button" id="speak-start-0">Speak</button>
+						<button class="btn btn-large" type="button" id="speak-stop-0" disabled="disabled">Stop</button>
 					</div>
 				</div>
-				<div class="btn-group">
-					<button class="btn btn-primary" type="button" id="process-data-0">Process data</button>
-					<button class="btn" type="button" id="export-data-csv-0">Export data to CSV</button>
-					<button class="btn" type="button" id="export-data-json-0">Export data to JSON</button>
-					<button class="btn" type="button" id="export-data-model-0">Export as model</button>
+				<div class="tab-pane" id="input-file-0">
+					<div class="form-horizontal">
+						<div class="control-group">
+							<label class="control-label" for="audio-file-input-0">Input file</label>
+							<div class="controls">
+								<input type="file" id="audio-file-input-0"/>
+							</div>
+						</div>
+					</div>
 				</div>
+			</div>
+			
+			<hr />
+
+			<div class="btn-group">
+				<button class="btn btn-primary" type="button" id="process-data-0">Process data</button>
+				<button class="btn" type="button" id="export-data-csv-0">Export data to CSV</button>
+				<button class="btn" type="button" id="export-data-json-0">Export data to JSON</button>
+				<button class="btn" type="button" id="export-data-model-0">Export as model</button>
 			</div>
 			<div style="text-align: center;">
 				<audio id="audio-element-0"
@@ -75,21 +93,40 @@
 			</div>
 		</div>
 		<div class="span6">
-			<h1 id="audio-file-name-1">Input file #2</h1>
-			<div class="form-horizontal">
-				<div class="control-group">
-					<label class="control-label" for="audio-file-input-1">Input file</label>
-					<div class="controls">
-						<input type="file" id="audio-file-input-1"/>
+			<h1 id="audio-file-name-1">Audio input #2</h1>
+			
+			<ul class="nav nav-tabs">
+				<li><a href="#input-microphone-1" data-toggle="tab">Microphone</a></li>
+				<li class="active"><a href="#input-file-1" data-toggle="tab">Input file</a></li>
+			</ul>
+			<div class="tab-content">
+				<div class="tab-pane" id="input-microphone-1">
+					<div class="btn-group">
+						<button class="btn btn-primary btn-large" type="button" id="speak-start-1">Speak</button>
+						<button class="btn btn-large" type="button" id="speak-stop-1" disabled="disabled">Stop</button>
 					</div>
 				</div>
-				<div class="btn-group">
-					<button class="btn btn-primary" type="button" id="process-data-1">Process data</button>
-					<button class="btn" type="button" id="export-data-csv-1">Export data to CSV</button>
-					<button class="btn" type="button" id="export-data-json-1">Export data to JSON</button>
-					<button class="btn" type="button" id="export-data-model-1">Export as model</button>
+				<div class="tab-pane active" id="input-file-1">
+					<div class="form-horizontal">
+						<div class="control-group">
+							<label class="control-label" for="audio-file-input-1">Input file</label>
+							<div class="controls">
+								<input type="file" id="audio-file-input-1"/>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
+			
+			<hr />
+			
+			<div class="btn-group">
+				<button class="btn btn-primary" type="button" id="process-data-1">Process data</button>
+				<button class="btn" type="button" id="export-data-csv-1">Export data to CSV</button>
+				<button class="btn" type="button" id="export-data-json-1">Export data to JSON</button>
+				<button class="btn" type="button" id="export-data-model-1">Export as model</button>
+			</div>
+
 			<div style="text-align: center;">
 				<audio id="audio-element-1"
 					controls="true"
@@ -172,6 +209,7 @@
 
 <script src="http://code.jquery.com/jquery-latest.js"></script>
 <script src="js/lib/bootstrap.min.js"></script>
+<script src="js/lib/recorder.js"></script>
 <script src="js/lib/utils.js"></script>
 <script src="js/lib/inherit.js"></script>
 <script src="js/lib/observable.js"></script>

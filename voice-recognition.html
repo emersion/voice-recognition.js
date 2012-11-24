@@ -35,17 +35,17 @@
 		<div class="span6">
 			<h1>Input</h1>
 			<ul class="nav nav-tabs">
-				<li><a href="#input-microphone" data-toggle="tab">Microphone</a></li>
-				<li class="active"><a href="#input-file" data-toggle="tab">Input file</a></li>
+				<li class="active"><a href="#input-microphone" data-toggle="tab">Microphone</a></li>
+				<li><a href="#input-file" data-toggle="tab">Input file</a></li>
 			</ul>
 			<div class="tab-content">
-				<div class="tab-pane" id="input-microphone">
+				<div class="tab-pane active" id="input-microphone">
 					<div class="btn-group">
 						<button class="btn btn-primary btn-large" type="button" id="speak-start">Speak</button>
 						<button class="btn btn-large" type="button" id="speak-stop" disabled="disabled">Stop</button>
 					</div>
 				</div>
-				<div class="tab-pane active" id="input-file">
+				<div class="tab-pane" id="input-file">
 					<div class="form-horizontal">
 						<div class="control-group">
 							<label class="control-label" for="audio-file-input">Input file</label>
@@ -183,6 +183,7 @@
 
 <script src="http://code.jquery.com/jquery-latest.js"></script>
 <script src="js/lib/bootstrap.min.js"></script>
+<script src="js/lib/recorder.js"></script>
 <script src="js/lib/utils.js"></script>
 <script src="js/lib/inherit.js"></script>
 <script src="js/lib/observable.js"></script>

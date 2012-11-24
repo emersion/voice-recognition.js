@@ -126,14 +126,26 @@ VoiceAnalysis.prototype = {
 		var that = this;
 
 		this.control('audio')
-			.bind('MozAudioAvailable', function(event) {
-				that._audioAvailable(event.originalEvent);
+			.bind('MozAudioAvailable', function(e) {
+				var event = e.originalEvent;
+
+				that.audioAvailable(event.frameBuffer, event.time);
 			})
 			.bind('loadedmetadata', function() {
-				that._loadedMetadata();
+				var channels, sampleRate, frameBufferLength;
+
+				try {
+					channels          = that.control('audio')[0].mozChannels;
+					sampleRate        = that.control('audio')[0].mozSampleRate;
+					frameBufferLength = that.control('audio')[0].mozFrameBufferLength;
+				} catch (err) {
+					return;
+				}
+
+				that.ready(channels, sampleRate, frameBufferLength);
 			})
 			.bind('ended pause', function() {
-				that._updateStatus(2);
+				that.ended();
 			});
 
 		this._updateStatus();
@@ -159,10 +171,10 @@ VoiceAnalysis.prototype = {
 			file: file
 		});
 	},
-	_loadedMetadata: function _loadedMetadata() {
-		this._channels          = this.control('audio')[0].mozChannels;
-		this._rate              = this.control('audio')[0].mozSampleRate;
-		this._frameBufferLength = this.control('audio')[0].mozFrameBufferLength;
+	ready: function ready(channels, sampleRate, frameBufferLength) {
+		this._channels          = channels;
+		this._rate              = sampleRate;
+		this._frameBufferLength = frameBufferLength;
 
 		this._dataIndex = 0;
 		this._maxMagnitude = 0;
@@ -170,6 +182,7 @@ VoiceAnalysis.prototype = {
 		this._magnitudes = new Float32Array(1024);
 		this._magnitudesIndex = new Float32Array(1024);
 		this._time = new Float32Array(1024);
+		this._startTime = null;
 
 		this._fft = new FFT(this._frameBufferLength / this._channels, this._rate);
 
@@ -182,17 +195,23 @@ VoiceAnalysis.prototype = {
 		this._magnitudes = new Float32Array(1024);
 		this._magnitudesIndex = new Float32Array(1024);
 		this._time = new Float32Array(1024);
+		this._startTime = null;
 
 		this._updateStatus(1);
 	},
-	_audioAvailable: function _audioAvailable(event) {
+	audioAvailable: function audioAvailable(fb, t) {
 		if (this.status() < 1) {
 			this.reset();
 		}
 
-		var fb = event.frameBuffer,
-		t  = event.time, /* unused, but it's there */
-		signal = new Float32Array(fb.length / this._channels),
+		if (this._startTime === null) {
+			this._startTime = new Date().getTime() / 1000;
+		}
+		if (typeof t != 'number') {
+			t = new Date().getTime() / 1000 - this._startTime;
+		}
+
+		var signal = new Float32Array(fb.length / this._channels),
 		magnitude,
 		lastMagnitude,
 		maxMagnitude = 0,
@@ -241,6 +260,9 @@ VoiceAnalysis.prototype = {
 
 		this._dataIndex++;
 	},
+	ended: function ended() {
+		this._updateStatus(2);
+	},
 	processData: function processData() {
 		if (this.status() < 2 || !this._magnitudes) {
 			return false;
@@ -282,7 +304,7 @@ VoiceAnalysis.prototype = {
 			}
 
 			if (startedSince >= requiredFollowingPts) {
-				this._range[0] = i - startedSince;
+				this._range[0] = i - startedSince + 1;
 				Utils.logMessage('=> Begining detected', this._range[0]);
 				break;
 			}
@@ -303,7 +325,7 @@ VoiceAnalysis.prototype = {
 			}
 
 			if (endedSince >= requiredFollowingPts) {
-				this._range[1] = i + endedSince;
+				this._range[1] = i + endedSince - 1;
 				Utils.logMessage('=> End detected', this._range[1]);
 				break;
 			}

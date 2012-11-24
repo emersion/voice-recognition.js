@@ -69,6 +69,8 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 	(function() {
 		var $controls = {
 			fileInput: $('#audio-file-input-' + i),
+			speakStart: $('#speak-start-' + i),
+			speakStop: $('#speak-stop-' + i),
 			audio: $('#audio-element-' + i),
 			canvas: $('#fft-' + i),
 			title: $('#audio-file-name-' + i),
@@ -86,6 +88,37 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 		$controls.fileInput.bind('change', function() {
 			var file = $controls.fileInput[0].files[0];
 			analysis.setInputFile(file);
+		});
+		$controls.speakStart.bind('click', function() {
+			Recorder.record({
+				start: function() {
+					$controls.speakStop.prop('disabled', false);
+					$controls.speakStart.prop('disabled', true);
+				}
+			});
+		});
+		$controls.speakStop.bind('click', function() {
+			Recorder.stop();
+
+			var samples = Recorder.audioData();
+
+			if (samples.length == 0) {
+				console.error('Empty data retrieved. Maybe you should restart Flash ("$ ps -aef | grep flashplayer") ?');
+				return;
+			}
+
+			var channels = 1, sampleRate = 44100, bufferLength = 512, timeInterval = 1 / (sampleRate / 1000);
+			analysis.ready(channels, sampleRate, bufferLength);
+
+			for (var i = 0; i < samples.length / bufferLength; i++) {
+				var frameBuffer = new Float32Array(bufferLength);
+				for (var j = 0; j < bufferLength; j++) {
+					frameBuffer[j] = samples[i * bufferLength + j];
+				}
+				analysis.audioAvailable(frameBuffer, i * timeInterval);
+			}
+
+			analysis.ended();
 		});
 		$controls.audio.bind('playing', function() {
 			analysis.reset();
@@ -143,6 +176,8 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 					$control.prop('disabled', true);
 				}
 			}
+
+			$controls.speakStart.prop('disabled', false);
 
 			if (status > 1) {
 				$controls.processData.prop('disabled', false);
@@ -278,3 +313,7 @@ comparison.bind('compare', function(data) {
 })
 
 comparison.init();
+
+Recorder.initialize({
+	swfSrc: 'swf/recorder.swf'
+});

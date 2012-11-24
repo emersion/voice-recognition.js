@@ -52,12 +52,10 @@ globalProgress.bind('update', function(data) {
 		.toggleClass('text-error', data.error)
 		.html(data.message || 'Loading...');
 
-	if ($recognitionControls.globalProgressContainer.is(':hidden')) {
-		$recognitionControls.globalProgressContainer.slideDown();
-	}
-
 	if (data.value == 100 && !data.error) {
-		$recognitionControls.globalProgressContainer.slideUp();
+		$recognitionControls.globalProgressContainer.stop().slideUp();
+	} else if ($recognitionControls.globalProgressContainer.is(':hidden')) {
+		$recognitionControls.globalProgressContainer.stop().slideDown();
 	}
 });
 
@@ -251,20 +249,27 @@ $recognitionControls.recognize.click(function() {
 //Microphone input
 $recognitionControls.speakStart.click(function() {
 	globalProgress.reset();
-	globalProgress.message('Capturing microphone...');
+	globalProgress.message('Waiting for microphone...');
+
+	var recording = function() {
+		$recognitionControls.speakStop.prop('disabled', false);
+		$recognitionControls.speakStart.prop('disabled', true);
+
+		globalProgress.partComplete();
+		globalProgress.message('Recording...');
+	};
 
 	navigator.getMedia = (navigator.getUserMedia ||
 		navigator.webkitGetUserMedia ||
 		navigator.mozGetUserMedia ||
 		navigator.msGetUserMedia);
 
-	if (navigator.getMedia) {
+	if (navigator.getMedia && (window.AudioContext || window.webkitAudioContext) && false) { //Not supported
 		navigator.getMedia({
 			video: false,
 			audio: true
 		}, function(stream) {
-			$recognitionControls.speakStop.prop('disabled', false);
-			$(this).prop('disabled', true);
+			recording();
 
 			if (navigator.mozGetUserMedia) {
 				$recognitionControls.audio[0].mozSrcObject = stream;
@@ -275,15 +280,63 @@ $recognitionControls.speakStart.click(function() {
 
 			$recognitionControls.audio[0].play();
 		}, function(err) {
-			globalProgress.error('Can\'t capture microphone : '+err);
+			var msg;
+			if (err == 'NOT_SUPPORTED_ERROR') {
+				msg = 'the browser does\'nt support microphone capturing';
+			} else if (err == 'PERMISSION_DENIED') {
+				msg = 'you denied the application to access your microphone';
+			} else if (err == 'MANDATORY_UNSATISFIED_ERROR') {
+				msg = 'no audio tracks are found';
+			} else if (err == 'NO_DEVICES_FOUND') {
+				msg = 'no microphone detected';
+			}
+
+			globalProgress.error('Can\'t capture microphone : '+((msg) ? msg + ' ('+err+')' : err)+'.');
 		});
 	} else { //Flash fallback
-		globalProgress.error('Not implemented yet...');
+		Recorder.record({
+			start: function() {
+				recording();
+			},
+			cancel: function() {
+				globalProgress.error('Speech cancelled.');
+			}
+		});
 	}
 });
 $recognitionControls.speakStop.click(function() {
 	$recognitionControls.speakStart.prop('disabled', false);
-	$(this).prop('disabled', true);
+	$recognitionControls.speakStop.prop('disabled', true);
 
-	$recognitionControls.audio[0].pause();
+	if (navigator.getMedia && (window.AudioContext || window.webkitAudioContext) && false) { //Not supported
+		$recognitionControls.audio[0].pause();
+	} else {
+		globalProgress.message('Retrieving recorded data...');
+		Recorder.stop();
+
+		var samples = Recorder.audioData();
+
+		if (samples.length == 0) {
+			globalProgress.error('Empty data retrieved. Maybe you should restart Flash ("$ ps -aef | grep flashplayer") ?');
+			return;
+		}
+
+		var channels = 1, sampleRate = 44100, bufferLength = 512, timeInterval = 1 / (sampleRate / bufferLength);
+		analysis.ready(channels, sampleRate, bufferLength);
+
+		for (var i = 0; i < samples.length / bufferLength; i++) {
+			var frameBuffer = new Float32Array(bufferLength);
+			for (var j = 0; j < bufferLength; j++) {
+				frameBuffer[j] = samples[i * bufferLength + j];
+			}
+			analysis.audioAvailable(frameBuffer, i * timeInterval);
+		}
+
+		analysis.ended();
+		analysis.processData();
+	}
+});
+
+Recorder.initialize({
+	swfSrc: 'swf/recorder.swf'
 });
