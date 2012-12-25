@@ -1,4 +1,8 @@
-// FFT from dsp.js, see below
+/**
+ * A FFT (from dsp.js, see https://github.com/corbanbrook/dsp.js).
+ * @param {Number} bufferSize The buffer size (e.g. 1024).
+ * @param {Number} sampleRate The sample rate (e.g. 44100).
+ */
 var FFT = function FFT(bufferSize, sampleRate) {
 	this.bufferSize   = bufferSize;
 	this.sampleRate   = sampleRate;
@@ -27,6 +31,10 @@ var FFT = function FFT(bufferSize, sampleRate) {
 	}
 };
 
+/**
+ * Forward a signal.
+ * @param  {Float32Array} buffer The audio data.
+ */
 FFT.prototype.forward = function forward(buffer) {
 	var bufferSize   = this.bufferSize,
 	cosTable     = this.cosTable,
@@ -92,36 +100,69 @@ FFT.prototype.forward = function forward(buffer) {
 	}
 };
 
+/**
+ * A voice analysis.
+ * @param {Object} options Some options such as id and controls.
+ */
 var VoiceAnalysis = function VoiceAnalysis(options) {
-	Utils.Observable.call(this);
+	Utils.Observable.call(this); //Heritage de Observable.
 
+	//Definition des proprietes de l'objet
 	this._id = options.id;
-	this._$controls = options.controls;
-	this._status = 0;
-	this._name = 'Audio input #' + (this.id() + 1);
+	this._$controls = options.controls; //Controles (ex: balise audio)
+	this._status = 0; //Statut de l'analyse
+	this._name = 'Audio input #' + (this.id() + 1); //Nom de l'analyse
 };
 VoiceAnalysis.prototype = {
+	/**
+	 * Get this analysis' id.
+	 * @return {Number}
+	 */
 	id: function getId() {
 		return this._id;
 	},
+	/**
+	 * Get this analysis' name.
+	 * @return {String}
+	 */
 	name: function getName() {
 		return this._name;
 	},
+	/**
+	 * Get a control.
+	 * @param  {String} name The control's name.
+	 * @return {jQuery}
+	 */
 	control: function getControl(name) {
 		return this._$controls[name];
 	},
+	/**
+	 * Get this analysis' status.
+	 * @return {Number}
+	 */
 	status: function getStatus() {
 		return this._status;
 	},
+	/**
+	 * Get the analysis' range (when does the speaker speak).
+	 * @return {Number[]} An array containing two indexes : the begining & the end.
+	 */
 	range: function getRange() {
 		return this._range || [];
 	},
+	/**
+	 * Get this analysis' standardized data.
+	 * @return {Object}
+	 */
 	standardizedData: function getStandardizedData() {
 		return {
 			magnitude: this._standardizedMagnitudes,
 			time: this._standardizedTime
 		};
 	},
+	/**
+	 * Initialize the analysis.
+	 */
 	init: function init() {
 		var that = this;
 
@@ -150,6 +191,11 @@ VoiceAnalysis.prototype = {
 
 		this._updateStatus();
 	},
+	/**
+	 * Update this analysis' status.
+	 * @param  {Number} [status] The new status.
+	 * @private
+	 */
 	_updateStatus: function _updateStatus(status) {
 		status = (typeof status == 'number') ? status : this._status;
 		this._status = status;
@@ -158,6 +204,10 @@ VoiceAnalysis.prototype = {
 
 		VoiceAnalysis._updatedStatus(this);
 	},
+	/**
+	 * Set this analysis' input file.
+	 * @param {File} file The file.
+	 */
 	setInputFile: function setInputFile(file) {
 		if (!file) {
 			return;
@@ -171,6 +221,9 @@ VoiceAnalysis.prototype = {
 			file: file
 		});
 	},
+	/**
+	 * Initialize this analysis hen the audio element is ready.
+	 */
 	ready: function ready(channels, sampleRate, frameBufferLength) {
 		this._channels          = channels;
 		this._rate              = sampleRate;
@@ -188,6 +241,9 @@ VoiceAnalysis.prototype = {
 
 		this._updateStatus(1);
 	},
+	/**
+	 * Reset this analysis.
+	 */
 	reset: function reset() {
 		this._dataIndex = 0;
 		this._maxMagnitude = 0;
@@ -199,6 +255,11 @@ VoiceAnalysis.prototype = {
 
 		this._updateStatus(1);
 	},
+	/**
+	 * Method to call when audio data is available.
+	 * @param  {Float32Array} fb The audio data.
+	 * @param  {Number} t  The audio time.
+	 */
 	audioAvailable: function audioAvailable(fb, t) {
 		if (this.status() < 1) {
 			this.reset();
@@ -260,9 +321,15 @@ VoiceAnalysis.prototype = {
 
 		this._dataIndex++;
 	},
+	/**
+	 * Method to call when the audio is finished.
+	 */
 	ended: function ended() {
 		this._updateStatus(2);
 	},
+	/**
+	 * Process the audio data.
+	 */
 	processData: function processData() {
 		if (this.status() < 2 || !this._magnitudes) {
 			return false;
@@ -354,6 +421,10 @@ VoiceAnalysis.prototype = {
 
 		this.notify('complete');
 	},
+	/**
+	 * Export the audio data.
+	 * @param  {String} format The exporting format : csv or json.
+	 */
 	exportData: function exportData(format) {
 		format = format || 'json';
 
@@ -379,13 +450,23 @@ VoiceAnalysis.prototype = {
 		}
 	}
 };
-Utils.inherit(VoiceAnalysis, Utils.Observable);
 
+//Inheritance from Observable
+Utils.inherit(VoiceAnalysis, Utils.Observable);
 Utils.Observable.build(VoiceAnalysis);
 
-
+/**
+ * List of voice analyses.
+ * @type {Array}
+ * @private
+ */
 VoiceAnalysis._items = [];
 
+/**
+ * Build a new voice analysis.
+ * @param  {Object} controls The analysis controls, such as th audio element...
+ * @return {VoiceAnalysis}   The voice analysis.
+ */
 VoiceAnalysis.build = function build(controls) {
 	var analysis = new VoiceAnalysis({
 		id: VoiceAnalysis._items.length,
@@ -397,10 +478,19 @@ VoiceAnalysis.build = function build(controls) {
 	return analysis;
 };
 
+/**
+ * Get a list of all voice analyses.
+ * @return {Array} A list of voice analyses.
+ */
 VoiceAnalysis.items = function items() {
 	return VoiceAnalysis._items;
 };
 
+/**
+ * Called when a voice analysis' status is updated.
+ * @param  {VoiceAnalysis} analysis The voice analysis.
+ * @private
+ */
 VoiceAnalysis._updatedStatus = function _updatedStatus(analysis) {
 	var analyses = VoiceAnalysis.items(), globalMinStatus;
 	for (var i = 0; i < analyses.length; i++) {

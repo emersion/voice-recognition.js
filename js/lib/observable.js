@@ -1,16 +1,30 @@
+/**
+ * An implementation of the observer design pattern.
+ * @author $imon
+ */
+
 (function() {
-	if (!window.Utils) {
+	if (!window.Utils) { //Define utils' namespace
 		window.Utils = {};
 	}
 
-	if (Utils.Observable) {
+	if (Utils.Observable) { //If the library is already loaded
 		return;
 	}
 
+	/**
+	 * An observable object.
+	 */
 	Utils.Observable = function Observable() {
 		this._observers = [];
 	};
 	Utils.Observable.prototype = {
+		/**
+		 * Register a function to be called when the specified event is triggered.
+		 * @param  {String}   event The event's name. Can be a comma-separated list of events. Namespaces can be used.
+		 * @param  {Function} fn    The function which will be used as the callback.
+		 * @return {Number}         The id of the callback.
+		 */
 		bind: function $_Observable_bind(event, fn) {
 			var namespace = event;
 			var events = event.split(' '), eventsNames = [];
@@ -24,6 +38,11 @@
 				events: events
 			}) - 1;
 		},
+		/**
+		 * Bind a function for an event once.
+		 * @param  {String}   event The event's name.
+		 * @param  {Function} fn    The function.
+		 */
 		one: function $_Observable_one(event, fn) {
 			var that = this;
 
@@ -32,6 +51,11 @@
 				fn.call(this, data);
 			});
 		},
+		/**
+		 * Unbind a callback.
+		 * @param  {Number|String}   key The callback id or the event name.
+		 * @param  {Function} [fn]  The callback.
+		 */
 		unbind: function $_Observable_unbind(key, fn) {
 			var observers = [];
 			if (typeof key == 'number') {
@@ -64,6 +88,12 @@
 			}
 			this._observers = observers;
 		},
+		/**
+		 * Trigger an event.
+		 * @param  {String} event     The event's name.
+		 * @param  {Object} [data]    Data to pass to callbacks.
+		 * @param           [thisObj] The context in which callbacks will be executed.
+		 */
 		notify: function $_Observable_notify(event, data, thisObj) {
 			data = data || {};
 			var scope = thisObj || this, events = event.split(' ');
@@ -80,6 +110,11 @@
 		}
 	};
 
+	/**
+	 * Build an observable from an object.
+	 * @param  {Object} object The object.
+	 * @return {Object}
+	 */
 	Utils.Observable.build = function $_Observable_build(object) {
 		object._observers = [];
 		object.bind = function(event, fn) {
@@ -97,6 +132,7 @@
 		return object;
 	};
 
+	// Not used :
 	Utils.Observable.Group = function ObservableGroup(observables) {
 		var list = [];
 		if (observables instanceof Array) {

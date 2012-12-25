@@ -1,16 +1,21 @@
+/**
+ * An impementation of inheritance.
+ * @author  $imon
+ */
+
 (function() {
-	if (!window.Utils) {
+	if (!window.Utils) { //Define utils' namespace
 		window.Utils = {};
 	}
 
-	if (Utils.inherit) {
+	if (Utils.inherit) { //If the library is already loaded
 		return;
 	}
 
 	/**
-	 * Implémentation de la notion d'héritage.
-	 * @param {Object} C La classe fille.
-	 * @param {Object} P La classe parente.
+	 * An implementation of inheritance.
+	 * @param {Object} C The child class.
+	 * @param {Object} P The parent class.
 	 */
 	Utils.inherit = function inherit(C, P) {
 		var F = function() {};
@@ -22,10 +27,10 @@
 	};
 
 	/**
-	 * Détermine si un objet est une instance d'une classe.
-	 * @param {Object} instance L'objet a tester.
-	 * @param {Object} obj La classe.
-	 * @returns {Boolean} Vrai si l'objet est une instance de la classe spécifiée.
+	 * Specify if an object is an instance of a class.
+	 * @param {Object} instance The object to test.
+	 * @param {Object} obj The class.
+	 * @returns {Boolean} True if the object if an instance of the specified class.
 	 */
 	Utils.isInstanceOf = function isInstanceOf(instance, obj) {
 		if (!instance || typeof instance != 'object' || !obj) {

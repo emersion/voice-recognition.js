@@ -1,5 +1,6 @@
-Utils.Options.set('utils.math.precision', 6);
+Utils.Options.set('utils.math.precision', 6); //Precision of numbers used
 
+//General options which are manageable from inputs
 Utils.Options.register('utils.logMessages', 'boolean', '#options-logMessages');
 Utils.Options.register('voice.comparing.showFFT', 'boolean', '#options-showFFT');
 
@@ -10,6 +11,7 @@ Utils.Options.register('voice.shifting.enabled', 'boolean', '#options-enable-shi
 Utils.Options.register('voice.shifting.maxPtShift', 'number', '#options-maxPtShift');
 Utils.Options.register('voice.shifting.toleratedRatio', 'number', '#options-toleratedRatio');
 
+//General controls
 var $recognitionControls = {
 	audio: $('#audio-element'),
 	canvas: $('#fft'),
@@ -39,13 +41,16 @@ var $recognitionControls = {
 	dataModelsInput: $('#models-data-input')
 };
 
+//Resize the canvas
 var canvasMargin = $recognitionControls.canvas.outerWidth(true) - $recognitionControls.canvas.width();
 $recognitionControls.canvas.attr('width', ($recognitionControls.canvas.parent().width() - canvasMargin) + 'px');
 
+//Create a new progress for the recognition
 var globalProgress = new Utils.Progress({
 	parts: 4
 });
 
+//Events
 globalProgress.bind('update', function(data) {
 	$recognitionControls.globalProgressBar.css('width', data.value + '%');
 	$recognitionControls.globalProgressMsg
@@ -59,12 +64,14 @@ globalProgress.bind('update', function(data) {
 	}
 });
 
+//Create a new analysis for the audio input
 var analysis = VoiceAnalysis.build({
 	audio: $recognitionControls.audio,
 	canvas: $recognitionControls.canvas
 });
-analysis.init();
+analysis.init(); //Initialize the analysis
 
+//Avants
 $recognitionControls.audio.bind('playing', function() {
 	analysis.reset();
 
@@ -93,8 +100,10 @@ analysis.bind('inputchange', function() {
 	$recognitionControls.recognize.prop('disabled', false);
 });
 
+//Create a new voice recognition
 var recognition = VoiceRecognition.build();
 
+//Events
 recognition.bind('start', function() {
 	globalProgress.message('Recognizing...');
 });
@@ -157,6 +166,10 @@ recognition.bind('complete', function(data) {
 	$recognitionControls.resultContainer.slideDown();
 });
 
+/**
+ * Load recognition's models.
+ * @param {Function} callback A function which will be called when the models are loaded.
+ */
 var setRecognitionModels = function(callback) {
 	callback = callback || function() {};
 
@@ -337,6 +350,7 @@ $recognitionControls.speakStop.click(function() {
 	}
 });
 
+//Initialize flash recorder
 Recorder.initialize({
 	swfSrc: 'swf/recorder.swf'
 });

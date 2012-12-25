@@ -1,6 +1,7 @@
-Utils.Options.set('voice.audioNbr', 2);
-Utils.Options.set('utils.math.precision', 6);
+Utils.Options.set('voice.audioNbr', 2); //Number of audio inputs
+Utils.Options.set('utils.math.precision', 6); //Precision of numbers used.
 
+//General options which are manageable from inputs
 Utils.Options.register('utils.logMessages', 'boolean', '#options-logMessages');
 Utils.Options.register('voice.comparing.showFFT', 'boolean', '#options-showFFT');
 Utils.Options.register('voice.fnChaining', 'boolean', '#options-fnChaining');
@@ -12,8 +13,9 @@ Utils.Options.register('voice.shifting.enabled', 'boolean', '#options-enable-shi
 Utils.Options.register('voice.shifting.maxPtShift', 'number', '#options-maxPtShift');
 Utils.Options.register('voice.shifting.toleratedRatio', 'number', '#options-toleratedRatio');
 
-var comparison;
+var comparison; //The voice comparison
 
+//Global controls
 var $globalControls = {
 	play: $('#audio-element-play'),
 	pause: $('#audio-element-pause'),
@@ -21,6 +23,8 @@ var $globalControls = {
 
 	exportDataOptions: $('#export-data-model-options')
 };
+
+//Global control's events
 $globalControls.play.bind('click', function() {
 	var analyses = VoiceAnalysis.items();
 	for (var i = 0; i < analyses.length; i++) {
@@ -65,8 +69,9 @@ VoiceAnalysis.bind('updatestatus', function(data) {
 	}
 });
 
-for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
+for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice input
 	(function() {
+		//Define its controls
 		var $controls = {
 			fileInput: $('#audio-file-input-' + i),
 			speakStart: $('#speak-start-' + i),
@@ -80,11 +85,14 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 			exportModel: $('#export-data-model-' + i)
 		};
 
+		//Resize the canvas
 		var canvasMargin = $controls.canvas.outerWidth(true) - $controls.canvas.width();
 		$controls.canvas.attr('width', ($controls.canvas.parent().width() - canvasMargin) + 'px');
 
+		//Create a new voice analysis
 		var analysis = VoiceAnalysis.build($controls);
 
+		//Events
 		$controls.fileInput.bind('change', function() {
 			var file = $controls.fileInput[0].files[0];
 			analysis.setInputFile(file);
@@ -202,16 +210,20 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) {
 			}
 		});
 
+		//Now we can initialize the analysis
 		analysis.init();
 
+		//If the file is already specified (e.g. when reloading the page, inputs are pre-filled with their old values)
 		var file = $controls.fileInput[0].files[0];
 		analysis.setInputFile(file);
 	})();
 }
 
+//Create the comparison between the 2 audio inputs
 var analyses = VoiceAnalysis.items();
 comparison = VoiceComparison.build(analyses[0], analyses[1]);
 
+//Comparison's controls
 var $comparisonControls = {
 	prepareData: $('#prepare-data'),
 	prepareAndExportData: $('#prepare-export-data'),
@@ -223,6 +235,8 @@ var $comparisonControls = {
 	resultAvg: $('#result-deviation'),
 	resultStd: $('#result-std')
 };
+
+//Events
 $comparisonControls.prepareData.bind('click', function() {
 	comparison.prepareData();
 });
@@ -312,8 +326,10 @@ comparison.bind('compare', function(data) {
 	$comparisonControls.resultContainer.slideDown();
 })
 
+//Initialize comparison
 comparison.init();
 
+//Initialize flash recorder
 Recorder.initialize({
 	swfSrc: 'swf/recorder.swf'
 });

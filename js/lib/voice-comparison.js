@@ -1,3 +1,8 @@
+/**
+ * A comparison between two voice analyses.
+ * @param {VoiceAnalysis} left  The first voice analysis.
+ * @param {VoiceAnalysis} right The second voice analysis.
+ */
 var VoiceComparison = function VoiceComparison(left, right) {
 	Utils.Observable.call(this);
 
@@ -6,18 +11,33 @@ var VoiceComparison = function VoiceComparison(left, right) {
 	this._status = 0;
 };
 VoiceComparison.prototype = {
+	/**
+	 * Get this comparison's status.
+	 * @return {Number} The status.
+	 */
 	status: function getStatus() {
 		return this._status;
 	},
+	/**
+	 * Initialize the comparison.
+	 */
 	init: function init() {
 		this._updateStatus();
 	},
+	/**
+	 * Update this comparison's status.
+	 * @param  {Number} [status] The new status.
+	 * @private
+	 */
 	_updateStatus: function _updateStatus(status) {
 		status = (typeof status == 'number') ? status : this._status;
 		this._status = status;
 
 		this.notify('updatestatus', { status: status });
 	},
+	/**
+	 * Check if voice analyses are valid.
+	 */
 	checkVoiceAnalyses: function checkVoiceAnalyses() {
 		for (var i = 0; i < this._analyses.length; i++) {
 			if (this._analyses[i].status() < 3) {
@@ -27,6 +47,9 @@ VoiceComparison.prototype = {
 
 		this._updateStatus(1);
 	},
+	/**
+	 * Prepare voice analyses' data.
+	 */
 	prepareData: function prepareData() {
 		if (this.status() < 1) {
 			if (this.checkVoiceAnalyses() === false) {
@@ -111,6 +134,9 @@ VoiceComparison.prototype = {
 
 		return comparableData;
 	},
+	/**
+	 * Exported prepared data to CSV.
+	 */
 	exportPreparedData: function exportPreparedData() {
 		var out = 'Time;Right;Left';
 		for (var i = 0; i < this._data.right.length; i++) {
@@ -118,6 +144,9 @@ VoiceComparison.prototype = {
 		}
 		Utils.Export.exportCSV(out);
 	},
+	/**
+	 * Shift voice analyses' data.
+	 */
 	shiftData: function shiftData() {
 		if (this.status() < 2) {
 			if (this.prepareData() === false) {
@@ -206,6 +235,9 @@ VoiceComparison.prototype = {
 
 		return comparableData;
 	},
+	/**
+	 * Export shifted data to CSV.
+	 */
 	exportShiftedData: function exportShiftedData() {
 		var out = 'Time;Right;Left';
 		for (var i = 0; i < this._data.right.length; i++) {
@@ -213,6 +245,10 @@ VoiceComparison.prototype = {
 		}
 		Utils.Export.exportCSV(out);
 	},
+	/**
+	 * Compare voice analyses' data.
+	 * @return {Object} An object containing the average of differences and the standard deviation.
+	 */
 	compareData: function compareData() {
 		if (this.status() < 3) {
 			if (this.shiftData() === false) {
@@ -262,6 +298,9 @@ VoiceComparison.prototype = {
 			std: std
 		};
 	},
+	/**
+	 * Export compared data to CSV.
+	 */
 	exportComparedData: function exportComparedData() {
 		var out = 'Index;Deviation';
 		for (var i = 0; i < this._deviations.length; i++) {
@@ -270,8 +309,16 @@ VoiceComparison.prototype = {
 		Utils.Export.exportCSV(out);
 	}
 };
+
+//Inheritance form Observable
 Utils.inherit(VoiceComparison, Utils.Observable);
 
+/**
+ * Build a new voice comparison.
+ * @param {VoiceAnalysis} left  The first voice analysis.
+ * @param {VoiceAnalysis} right The second voice analysis.
+ * @return {VoiceComparison}    The voice comparison.
+ */
 VoiceComparison.build = function build(left, right) {
 	return new VoiceComparison(left, right);
 };
