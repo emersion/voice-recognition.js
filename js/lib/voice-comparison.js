@@ -1,5 +1,5 @@
 /**
- * A comparison between two voice analyses.
+ * @constructor
  * @param {VoiceAnalysis} left  The first voice analysis.
  * @param {VoiceAnalysis} right The second voice analysis.
  */
@@ -315,6 +315,7 @@ Utils.inherit(VoiceComparison, Utils.Observable);
 
 /**
  * Build a new voice comparison.
+ * @constructs
  * @param {VoiceAnalysis} left  The first voice analysis.
  * @param {VoiceAnalysis} right The second voice analysis.
  * @return {VoiceComparison}    The voice comparison.

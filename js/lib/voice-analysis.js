@@ -1,5 +1,7 @@
 /**
- * A FFT (from dsp.js, see https://github.com/corbanbrook/dsp.js).
+ * A Fast Fourrier Transform.
+ * @see <a href="https://github.com/corbanbrook/dsp.js">https://github.com/corbanbrook/dsp.js</a>
+ * @constructor
  * @param {Number} bufferSize The buffer size (e.g. 1024).
  * @param {Number} sampleRate The sample rate (e.g. 44100).
  */
@@ -102,6 +104,7 @@ FFT.prototype.forward = function forward(buffer) {
 
 /**
  * A voice analysis.
+ * @constructor
  * @param {Object} options Some options such as id and controls.
  */
 var VoiceAnalysis = function VoiceAnalysis(options) {
@@ -464,6 +467,7 @@ VoiceAnalysis._items = [];
 
 /**
  * Build a new voice analysis.
+ * @constructs
  * @param  {Object} controls The analysis controls, such as th audio element...
  * @return {VoiceAnalysis}   The voice analysis.
  */
@@ -480,7 +484,7 @@ VoiceAnalysis.build = function build(controls) {
 
 /**
  * Get a list of all voice analyses.
- * @return {Array} A list of voice analyses.
+ * @return {VoiceAnalysis[]} A list of voice analyses.
  */
 VoiceAnalysis.items = function items() {
 	return VoiceAnalysis._items;

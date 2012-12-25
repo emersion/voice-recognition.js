@@ -1,5 +1,5 @@
 /**
- * Math functions.
+ * @fileOverview Math functions.
  */
 
 (function() {

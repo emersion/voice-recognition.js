@@ -1,15 +1,25 @@
 /**
- * Various utils.
+ * @fileOverview Various utils.
  * @author $imon
  */
 
 (function() {
-	if (!window.Utils) { //Define utils' namespace
-		window.Utils = {};
+	if (window.Utils) { //Define utils' namespace
+		return;
 	}
+
+	var Utils;
+	
+	/**
+	 * Some various utils.
+	 * @type {Object}
+	 * @namespace
+	 */
+	Utils = {};
 
 	/**
 	 * Log a message in the console.
+	 * @function
 	 */
 	Utils.logMessage = function logMessage() {
 		if (Utils.Options.get('utils.logMessages')) {
@@ -49,4 +59,6 @@
 	Utils.Export.exportJSON = function exportJSON(data) {
 		return Utils.Export.exportData(JSON.stringify(data), 'application/json');
 	};
+
+	window.Utils = Utils; //Export API
 })();

@@ -1,6 +1,6 @@
 /**
- * An impementation of inheritance.
- * @author  $imon
+ * @fileOverview An impementation of inheritance.
+ * @author $imon
  */
 
 (function() {
@@ -14,6 +14,7 @@
 
 	/**
 	 * An implementation of inheritance.
+	 * @function
 	 * @param {Object} C The child class.
 	 * @param {Object} P The parent class.
 	 */
@@ -28,6 +29,7 @@
 
 	/**
 	 * Specify if an object is an instance of a class.
+	 * @function
 	 * @param {Object} instance The object to test.
 	 * @param {Object} obj The class.
 	 * @returns {Boolean} True if the object if an instance of the specified class.

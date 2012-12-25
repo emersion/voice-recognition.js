@@ -1,9 +1,10 @@
 /**
- * Recorder.js (see https://github.com/jwagener/recorder.js).
+ * Recorder.js
  * @version 1.12
- * @author  jwagener
+ * @author jwagener
+ * @see <a href="https://github.com/jwagener/recorder.js">https://github.com/jwagener/recorder.js</a>
+ * @namespace
  */
-
 var Recorder = {
 	version: 1.12,
 	swfObject: null,

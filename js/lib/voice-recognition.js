@@ -1,5 +1,6 @@
 /**
  * A voice model.
+ * @constructor
  * @param {Object} data The model data containing the name, the speaker's name & gender, the microphone's name and the voice data.
  */
 var VoiceModel = function VoiceModel(data) {
@@ -69,6 +70,7 @@ VoiceModel.prototype = {
 
 /**
  * A voice recognition.
+ * @constructor
  */
 var VoiceRecognition = function VoiceRecognition() {
 	Utils.Observable.call(this); // Inheritance from Observable
@@ -248,6 +250,7 @@ Utils.inherit(VoiceRecognition, Utils.Observable); //Inheritance from Observable
 
 /**
  * Build a new voice recognition.
+ * @constructs
  * @return {VoiceRecogniton} The voice recognition.
  */
 VoiceRecognition.build = function build() {

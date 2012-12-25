@@ -1,5 +1,5 @@
 /**
- * Global options management.
+ * @fileOverview Global options management.
  * @author $imon
  */
 

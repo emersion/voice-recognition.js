@@ -1,5 +1,5 @@
 /**
- * Operation's progress management.
+ * @fileOverview Operation's progress management.
  * @author $imon
  */
 
@@ -14,6 +14,7 @@
 
 	/**
 	 * An operation's progress data.
+	 * @constructor
 	 * @param {Object} options Progress' options.
 	 * @param {Number} options.part Number of parts in the progress.
 	 */

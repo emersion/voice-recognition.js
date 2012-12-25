@@ -1,5 +1,5 @@
 /**
- * An implementation of the observer design pattern.
+ * @fileOverview An implementation of the observer design pattern.
  * @author $imon
  */
 
@@ -14,6 +14,7 @@
 
 	/**
 	 * An observable object.
+	 * @constructor
 	 */
 	Utils.Observable = function Observable() {
 		this._observers = [];
