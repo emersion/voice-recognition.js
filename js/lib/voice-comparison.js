@@ -45,20 +45,51 @@ VoiceComparison.prototype = {
 			}
 		}
 
+		if (!this.getFreqInCommon().length > 0) {
+			return false;
+		}
+
 		this._updateStatus(1);
+	},
+	/**
+	 * Get frequencies in common of both analyses.
+	 */
+	getFreqInCommon: function getFreqInCommon() {
+		var i, j, comparisonFrequencies, analysisFrequencies;
+		for (i = 0; i < this._analyses.length; i++) {
+			analysisFrequencies = this._analyses[i].frequencies();
+
+			if (!comparisonFrequencies) {
+				comparisonFrequencies = analysisFrequencies;
+			} else {
+				for (j = 0; j < comparisonFrequencies.length; j++) {
+					if ($.inArray(comparisonFrequencies[j], analysisFrequencies) == -1) {
+						comparisonFrequencies.splice(j, 1);
+					}
+				}
+			}
+		}
+
+		return comparisonFrequencies;
 	},
 	/**
 	 * Prepare voice analyses' data.
 	 */
 	prepareData: function prepareData() {
+		//Check if we can prepare data
 		if (this.status() < 1) {
 			if (this.checkVoiceAnalyses() === false) {
 				return false;
 			}
 		}
 
+		//Get to two analyses
 		var left = this._analyses[0], right = this._analyses[1];
 
+		//Get frequencies in common
+		var freqInCommon = this.getFreqInCommon();
+
+		//Determine the bigger analysis
 		var leftDataLength = left.range()[1] - left.range()[0],
 		rightDataLength = right.range()[1] - right.range()[0];
 
@@ -75,56 +106,82 @@ VoiceComparison.prototype = {
 			finerPos = 'left';
 		}
 
+		//Retrieve standardized data
 		var thickerStandardizedData = thicker.standardizedData(),
-		finerStandardizedData = finer.standardizedData()
+		finerStandardizedData = finer.standardizedData();
 
+		//Get frequencies of both analyses
+		var thickerFreq = thicker.frequencies(),
+		finerFreq = finer.frequencies();
+
+		//Create an object to store prepared data
 		var comparableData = {
 			right: [],
 			left: [],
 			time: []
 		};
 
+		//And now we can prepare the data
+
 		var lastFinerIndex = finer.range()[0] - 1,
 		thickerTime = 0,
 		finerTime = 0,
+		thickerMagnitudes,
+		thickerComparableData,
+		finerComparableData,
+		freq = 0,
 		thickerMagnitude = 0,
+		finerMagnitudes,
 		finerMagnitude = 0;
 		for (var thickerIndex = thicker.range()[0]; thickerIndex <= thicker.range()[1]; thickerIndex++) {
 			thickerTime = thickerStandardizedData.time[thickerIndex];
-			thickerMagnitude = thickerStandardizedData.magnitude[thickerIndex];
+			thickerMagnitudes = thickerStandardizedData.magnitude[thickerIndex];
 
-			Utils.logMessage('---------');
-			Utils.logMessage('Thicker ('+thickerPos+') : ', thickerIndex, thickerTime, thickerMagnitude);
+			thickerComparableData = new Float32Array(freqInCommon.length);
+			finerComparableData = new Float32Array(freqInCommon.length);
 
-			for (var finerIndex = finer.range()[0]; finerIndex <= finer.range()[1]; finerIndex++) {
-				finerTime = finerStandardizedData.time[finerIndex];
-				finerMagnitude = finerStandardizedData.magnitude[finerIndex];
-				
-				if (finerTime >= thickerTime) {
-					break;
+			for (var freqIndex = 0; freqIndex < freqInCommon.length; freqIndex++) {
+				freq = freqInCommon[freqIndex];
+				thickerFreqIndex = $.inArray(freq, thickerFreq);
+				finerFreqIndex = $.inArray(freq, finerFreq);
+				thickerMagnitude = thickerMagnitudes[thickerFreqIndex];
+
+				Utils.logMessage('---------');
+				Utils.logMessage('Thicker ('+thickerPos+') : index: '+thickerIndex+'; time: '+thickerTime+'; freq: '+freq+'; magnitude: '+thickerMagnitude);
+
+				for (var finerIndex = finer.range()[0]; finerIndex <= finer.range()[1]; finerIndex++) {
+					finerTime = finerStandardizedData.time[finerIndex];
+					finerMagnitude = finerStandardizedData.magnitude[finerIndex][finerFreqIndex];
+					
+					if (finerTime >= thickerTime) {
+						break;
+					}
 				}
+
+				var finerMagnitudeForThickerTime;
+				if (finerTime == thickerTime) {
+					finerMagnitudeForThickerTime = finerMagnitude;
+
+					Utils.logMessage('Finer ('+finerPos+') : index: '+finerIndex+'; time: '+finerTime+'; magnitude: '+finerMagnitude);
+				} else {
+					var finerPreviousIndex = finerIndex - 1,
+					finerPreviousTime = finerStandardizedData.time[finerPreviousIndex],
+					finerPreviousMagnitude = finerStandardizedData.magnitude[finerPreviousIndex][finerFreqIndex];
+
+					var slope = (finerPreviousMagnitude - finerMagnitude) / (finerPreviousTime - finerTime),
+					deltaTime = thickerTime - finerPreviousTime;
+
+					finerMagnitudeForThickerTime = finerPreviousMagnitude + deltaTime * slope;
+
+					Utils.logMessage('Finer ('+finerPos+') : index: previous: '+finerPreviousIndex+', current: '+finerIndex+'; time: previous: '+finerPreviousTime+', current: '+finerTime+'; magnitude: previous: '+finerPreviousMagnitude+', current: '+finerMagnitude+'; magnitude for thicker time: '+finerMagnitudeForThickerTime);
+				}
+
+				thickerComparableData[freqIndex] = thickerMagnitude;
+				finerComparableData[freqIndex] = finerMagnitudeForThickerTime;
 			}
 
-			var finerMagnitudeForThickerTime;
-			if (finerTime == thickerTime) {
-				finerMagnitudeForThickerTime = finerMagnitude;
-
-				Utils.logMessage('Finer ('+finerPos+') : ', finerIndex, finerTime, finerMagnitude);
-			} else {
-				var finerPreviousIndex = finerIndex - 1,
-				finerPreviousTime = finerStandardizedData.time[finerPreviousIndex],
-				finerPreviousMagnitude = finerStandardizedData.magnitude[finerPreviousIndex];
-
-				var slope = (finerPreviousMagnitude - finerMagnitude) / (finerPreviousTime - finerTime),
-				deltaTime = thickerTime - finerPreviousTime;
-
-				finerMagnitudeForThickerTime = finerPreviousMagnitude + deltaTime * slope;
-
-				Utils.logMessage('Finer ('+finerPos+') : ', [finerPreviousIndex, finerIndex], [finerPreviousTime, finerTime], [finerPreviousMagnitude, finerMagnitude], finerMagnitudeForThickerTime);
-			}
-
-			comparableData[thickerPos].push(thickerMagnitude);
-			comparableData[finerPos].push(finerMagnitudeForThickerTime);
+			comparableData[thickerPos].push(thickerComparableData);
+			comparableData[finerPos].push(finerComparableData);
 			comparableData.time.push(thickerTime);
 		}
 
@@ -138,9 +195,15 @@ VoiceComparison.prototype = {
 	 * Exported prepared data to CSV.
 	 */
 	exportPreparedData: function exportPreparedData() {
-		var out = 'Time;Right;Left';
-		for (var i = 0; i < this._data.right.length; i++) {
-			out += "\n"+this._data.time[i]+';'+this._data.right[i]+';'+this._data.left[i];
+		var out = 'Time;Frequency;Right;Left';
+
+		var freqInCommon = this.getFreqInCommon();
+
+		var i, j;
+		for (i = 0; i < this._data.right.length; i++) {
+			for (j = 0; j < freqInCommon.length; j++) {
+				out += "\n"+this._data.time[i]+';'+freqInCommon[j]+';'+this._data.right[i][j]+';'+this._data.left[i][j];
+			}
 		}
 		Utils.Export.exportCSV(out);
 	},
@@ -163,6 +226,7 @@ VoiceComparison.prototype = {
 			return this._data;
 		}
 
+		//TODO: work not done
 		var comparableData = {
 			right: [],
 			left: [],
@@ -239,11 +303,7 @@ VoiceComparison.prototype = {
 	 * Export shifted data to CSV.
 	 */
 	exportShiftedData: function exportShiftedData() {
-		var out = 'Time;Right;Left';
-		for (var i = 0; i < this._data.right.length; i++) {
-			out += "\n"+this._data.time[i]+';'+this._data.right[i]+';'+this._data.left[i];
-		}
-		Utils.Export.exportCSV(out);
+		this.exportPreparedData(); //Same method
 	},
 	/**
 	 * Compare voice analyses' data.
@@ -256,19 +316,22 @@ VoiceComparison.prototype = {
 			}
 		}
 
-		var comparableData = this._data;
+		var comparableData = this._data,
+		freqInCommon = this.getFreqInCommon(); //Get frequencies in common
 
 		var deviations = [];
 
-		var rightMaxPercentage, leftMaxPercentage, deviationPercentage, ratio, deviation;
+		var rightMagnitude, leftMagnitude, deviationPercentage, ratio, deviation;
 		for (var i = 0; i < comparableData.right.length; i++) {
-			rightMaxPercentage = comparableData.right[i];
-			leftMaxPercentage = comparableData.left[i];
+			for (var j = 0; j < freqInCommon.length; j++) {
+				rightMagnitude = comparableData.right[i][j];
+				leftMagnitude = comparableData.left[i][j];
 
-			deviationPercentage = Math.abs(rightMaxPercentage - leftMaxPercentage);
-			ratio = deviationPercentage / ((rightMaxPercentage + leftMaxPercentage) / 2);
+				deviationPercentage = Math.abs(rightMagnitude - leftMagnitude);
+				ratio = deviationPercentage / ((rightMagnitude + leftMagnitude) / 2);
 
-			deviations.push(ratio);
+				deviations.push(ratio);
+			}
 		}
 		
 		var avg = Utils.Math.getAverageFromNumArr(deviations),

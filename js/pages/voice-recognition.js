@@ -69,6 +69,7 @@ var analysis = VoiceAnalysis.build({
 	audio: $recognitionControls.audio,
 	canvas: $recognitionControls.canvas
 });
+analysis.frequencies('3-40');
 analysis.init(); //Initialize the analysis
 
 //Avants

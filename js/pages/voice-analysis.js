@@ -91,6 +91,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 
 		//Create a new voice analysis
 		var analysis = VoiceAnalysis.build($controls);
+		analysis.frequencies('3-40');
 
 		//Events
 		$controls.fileInput.bind('change', function() {
