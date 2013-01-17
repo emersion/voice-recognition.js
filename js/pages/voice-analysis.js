@@ -20,6 +20,7 @@ var $globalControls = {
 	play: $('#audio-element-play'),
 	pause: $('#audio-element-pause'),
 	processData: $('#process-data'),
+	buildModel: $('#build-model'),
 
 	exportDataOptions: $('#export-data-model-options')
 };
@@ -43,6 +44,56 @@ $globalControls.processData.bind('click', function() {
 		analyses[i].processData();
 	}
 });
+$globalControls.buildModel.bind('click', function() {
+	var metadata = {
+		gender: 'm',
+		speaker: 'simon',
+		micro: 'simon-samsung-shs-200v'
+	};
+
+	var analyses = VoiceAnalysis.items();
+
+	var dataToExport = [], dataIndex = 0, i, j, k, analysis, time, magnitudes;
+	for (i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice input
+		analysis = analyses[i];
+
+		var allVoiceData = analysis.standardizedData(),
+		voiceDataToExport = {
+			magnitude: [],
+			time: [],
+			frequencies: analysis.frequencies()
+		};
+
+		//Only keep interesting data
+		for (j = 0; j < allVoiceData.magnitude.length; j++) {
+			time = allVoiceData.time[j];
+
+			if (time >= 0 && time <= 100) {
+				magnitudes = [];
+				for (k = 0; k < allVoiceData.magnitude[j].length; k++) {
+					magnitudes.push(allVoiceData.magnitude[j][k]);
+				}
+				voiceDataToExport.magnitude.push(magnitudes);
+				voiceDataToExport.time.push(time);
+			}
+		}
+
+		dataToExport.push({
+			name: analysis.name(),
+			models: [
+				{
+					name: analysis.name(),
+					gender: metadata.gender,
+					speaker: metadata.speaker,
+					micro: metadata.micro,
+					data: voiceDataToExport
+				}
+			]
+		});
+	}
+
+	Utils.Export.exportJSON(dataToExport);
+});
 VoiceAnalysis.bind('updatestatus', function(data) {
 	var globalMinStatus = data.status;
 
@@ -56,6 +107,9 @@ VoiceAnalysis.bind('updatestatus', function(data) {
 	}
 	if (globalMinStatus > 1) {
 		$globalControls.processData.prop('disabled', false);
+	}
+	if (globalMinStatus > 2) {
+		$globalControls.buildModel.prop('disabled', false);
 	}
 
 	var globalFunctions = {
@@ -91,6 +145,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 
 		//Create a new voice analysis
 		var analysis = VoiceAnalysis.build($controls);
+		analysis.frequencies('3-40');
 
 		//Events
 		$controls.fileInput.bind('change', function() {
@@ -141,30 +196,35 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			analysis.exportData('json');
 		});
 		$controls.exportModel.bind('click', function() {
-			var allVoiceData = analysis.standardizedData(), voiceData = {
+			var allVoiceData = analysis.standardizedData(), voiceDataToExport = {
 				magnitude: [],
-				time: []
+				time: [],
+				frequencies: analysis.frequencies()
 			};
 
 			//Only keep interesting data
 			for (var i = 0; i < allVoiceData.magnitude.length; i++) {
-				var time = allVoiceData.time[i];
+				time = allVoiceData.time[i];
 
 				if (time >= 0 && time <= 100) {
-					voiceData.magnitude.push(allVoiceData.magnitude[i]);
-					voiceData.time.push(time);
+					magnitudes = [];
+					for (var j = 0; j < allVoiceData.magnitude[i].length; j++) {
+						magnitudes.push(allVoiceData.magnitude[i][j]);
+					}
+					voiceDataToExport.magnitude.push(magnitudes);
+					voiceDataToExport.time.push(time);
 				}
 			}
 
-			var data = {
+			var dataToExport = {
 				name: analysis.name(),
 				gender: 'm',
 				speaker: '',
 				micro: '',
-				data: voiceData
+				data: voiceDataToExport
 			};
 
-			Utils.Export.exportJSON(data);
+			Utils.Export.exportJSON(dataToExport);
 		});
 
 		analysis.bind('inputchange', function(data) {
@@ -230,7 +290,7 @@ var $comparisonControls = {
 	shiftData: $('#shift-data'),
 	shiftAndExportData: $('#shift-export-data'),
 	compareData: $('#compare-data'),
-	comparedAndExportData: $('#compare-export-data'),
+	compareAndExportData: $('#compare-export-data'),
 	resultContainer: $('#result-container'),
 	resultAvg: $('#result-deviation'),
 	resultStd: $('#result-std')
@@ -254,7 +314,7 @@ $comparisonControls.shiftAndExportData.bind('click', function() {
 	comparison.shiftData();
 	comparison.exportShiftedData();
 });
-$comparisonControls.comparedAndExportData.bind('click', function() {
+$comparisonControls.compareAndExportData.bind('click', function() {
 	comparison.compareData();
 	comparison.exportComparedData();
 });
@@ -280,7 +340,7 @@ comparison.bind('updatestatus', function(data) {
 
 	if (status > 2) {
 		$comparisonControls.compareData.prop('disabled', false);
-		$comparisonControls.comparedAndExportData.prop('disabled', false);
+		$comparisonControls.compareAndExportData.prop('disabled', false);
 	}
 
 	if (Utils.Options.get('voice.fnChaining')) {

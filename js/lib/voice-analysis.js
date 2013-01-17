@@ -115,6 +115,7 @@ var VoiceAnalysis = function VoiceAnalysis(options) {
 	this._$controls = options.controls; //Controles (ex: balise audio)
 	this._status = 0; //Statut de l'analyse
 	this._name = 'Audio input #' + (this.id() + 1); //Nom de l'analyse
+	this._frequencies = null;
 };
 VoiceAnalysis.prototype = {
 	/**
@@ -162,6 +163,53 @@ VoiceAnalysis.prototype = {
 			magnitude: this._standardizedMagnitudes,
 			time: this._standardizedTime
 		};
+	},
+	/**
+	 * Get/set frequencies on which this analysis is made.
+	 * @param  {Number|Number[]} freq Frequencies.
+	 * @return {Number[]|null}        Frequencies on which this analysis is made.
+	 */
+	frequencies: function frequencies(freq) {
+		if (typeof freq == 'undefined') {
+			return this._frequencies;
+		} else {
+			switch (typeof freq) {
+				case 'number':
+					freq = [freq];
+					break;
+				case 'string':
+					if (/^[0-9]+-[0-9]+$/.test(freq)) {
+						var result = /^([0-9]+)-([0-9]+)$/.exec(freq),
+						range = [parseInt(result[1]), parseInt(result[2])];
+
+						if (range[0] > range[1]) {
+							range = [range[1], range[0]];
+						}
+
+						freq = [];
+						for (var i = range[0]; i <= range[1]; i++) {
+							freq.push(i);
+						}
+					} else if (/^[0-9]+$/.test(freq)) {
+						freq = [parseInt(freq)];
+					}
+					break;
+				case 'object':
+					if (freq instanceof Array) {
+						//Use the array as is
+						//freq = freq;
+					} else {
+						return false;
+					}
+					break;
+				default:
+					return false;
+			}
+
+			freq.sort();
+
+			this._frequencies = freq;
+		}
 	},
 	/**
 	 * Initialize the analysis.
@@ -225,22 +273,23 @@ VoiceAnalysis.prototype = {
 		});
 	},
 	/**
-	 * Initialize this analysis hen the audio element is ready.
+	 * Initialize this analysis when the audio element is ready.
 	 */
 	ready: function ready(channels, sampleRate, frameBufferLength) {
-		this._channels          = channels;
-		this._rate              = sampleRate;
-		this._frameBufferLength = frameBufferLength;
+		this._channels = channels;
+		this._rate = sampleRate;
+		this._frameBufferLength = frameBufferLength; //The frame buffer length
 
-		this._dataIndex = 0;
-		this._maxMagnitude = 0;
+		this._maxMagnitude = 0; //The analysis' max. magnitude value
+		this._maxMagnitudeFreq = null; //The analysis' max. magnitude frequency
 
-		this._magnitudes = new Float32Array(1024);
-		this._magnitudesIndex = new Float32Array(1024);
-		this._time = new Float32Array(1024);
-		this._startTime = null;
+		this._maxAnalysisLength = 1024; //The analysis' max. number of data frames
 
-		this._fft = new FFT(this._frameBufferLength / this._channels, this._rate);
+		this._magnitudes = []; //Magnitudes
+		this._time = []; //Time
+		this._startTime = null; //Time when the analysis started
+
+		this._fft = new FFT(this._frameBufferLength / this._channels, this._rate); //The FFT
 
 		this._updateStatus(1);
 	},
@@ -248,42 +297,34 @@ VoiceAnalysis.prototype = {
 	 * Reset this analysis.
 	 */
 	reset: function reset() {
-		this._dataIndex = 0;
-		this._maxMagnitude = 0;
+		this._maxMagnitude = 0; //The analysis' max. magnitude value
+		this._maxMagnitudeFreq = null; //The analysis' max. magnitude frequency
 
-		this._magnitudes = new Float32Array(1024);
-		this._magnitudesIndex = new Float32Array(1024);
-		this._time = new Float32Array(1024);
-		this._startTime = null;
+		this._magnitudes = []; //Magnitudes
+		this._time = []; //Time
+		this._startTime = null; //Time when the analysis started
 
 		this._updateStatus(1);
 	},
 	/**
 	 * Method to call when audio data is available.
-	 * @param  {Float32Array} fb The audio data.
+	 * @param  {Float32Array} fb The audio data (frame buffer).
 	 * @param  {Number} t  The audio time.
 	 */
 	audioAvailable: function audioAvailable(fb, t) {
-		if (this.status() < 1) {
+		if (this.status() < 1) { //If it's a new analysis, reset this one
 			this.reset();
 		}
 
-		if (this._startTime === null) {
+		if (this._startTime === null) { //If it's the first one this method is called, register actual time as start time
 			this._startTime = new Date().getTime() / 1000;
 		}
-		if (typeof t != 'number') {
-			t = new Date().getTime() / 1000 - this._startTime;
+		if (typeof t != 'number') { //If no time is specified, let's deduce it from the start time
+			t = (new Date).getTime() / 1000 - this._startTime;
 		}
 
-		var signal = new Float32Array(fb.length / this._channels),
-		magnitude,
-		lastMagnitude,
-		maxMagnitude = 0,
-		maxMagnitudeIndex;
-
-		var showFFT = Utils.Options.get('voice.comparing.showFFT'),
-		canvas = this.control('canvas')[0],
-		ctx = canvas.getContext('2d');
+		//Forward signal to FFT
+		var signal = new Float32Array(fb.length / this._channels);
 
 		for (var i = 0, fbl = this._frameBufferLength / 2; i < fbl; i++ ) {
 			// Assuming interlaced stereo channels,
@@ -291,38 +332,62 @@ VoiceAnalysis.prototype = {
 			signal[i] = (fb[2*i] + fb[2*i+1]) / 2;
 		}
 
-		this._fft.forward(signal);
+		this._fft.forward(signal); //Forward the signal
 
-		if (showFFT) {
+		//Variables for canvas drawing
+		var showFFT = Utils.Options.get('voice.comparing.showFFT'), // Do we have to draw the FFT on the canvas ?
+		canvas = this.control('canvas')[0],
+		ctx = canvas.getContext('2d');
+
+		if (showFFT) { //If FFT is shown, clear the canvas
 			ctx.clearRect(0,0, canvas.width, canvas.height);
 		}
 
+		//Get the selected magnitudes
+		var analysisFreq = this.frequencies(); //Frequencies on which this analysis is made
+		var magnitudes = new Float32Array(analysisFreq.length);
+
+		var magnitude,
+		freqIndex = 0,
+		maxMagnitude = 0,
+		maxMagnitudeFreq;
+
 		for (var i = 0; i < this._fft.spectrum.length; i++ ) {
-			// multiply spectrum by a zoom value
+			var isMagnitudeSaved = ($.inArray(i, analysisFreq) != -1); //Is this magnitude saved ?
+
+			if (!showFFT && !isMagnitudeSaved) {
+				continue; //Ignore this magnitude
+			}
+
+			//Multiply spectrum by a zoom value
 			magnitude = this._fft.spectrum[i] * 4000;
 
-			if (magnitude > maxMagnitude) {
-				maxMagnitude = magnitude;
-				maxMagnitudeIndex = i;
-			}
-
 			if (showFFT) {
-				// Draw rectangle bars for each frequency bin
+				//Draw rectangle bars for each frequency bin
 				ctx.fillRect(i * 4, canvas.height, 3, - magnitude);
 			}
+
+			if (isMagnitudeSaved) { //If we have to save this magnitude
+				magnitudes[freqIndex] = magnitude;
+				freqIndex++;
+
+				if (magnitude > maxMagnitude) { //Is this the max. magnitude ?
+					maxMagnitude = magnitude;
+					maxMagnitudeFreq = freqIndex;
+				}
+			}
 		}
 
-		if (this._dataIndex < this._magnitudes.length) {
-			this._magnitudes[this._dataIndex] = maxMagnitude;
-			this._magnitudesIndex[this._dataIndex] = maxMagnitudeIndex;
-			this._time[this._dataIndex] = t;
+		if (this._magnitudes.length < this._maxAnalysisLength) { //If this analysis is not overflowed
+			//Save data in arrays
+			this._magnitudes.push(magnitudes);
+			this._time.push(t);
 		}
 
-		if (this._maxMagnitude < maxMagnitude) {
+		if (this._maxMagnitude < maxMagnitude) { //Analysis' max magnitude
 			this._maxMagnitude = maxMagnitude;
+			this._maxMagnitudeFreq = maxMagnitudeFreq;
 		}
-
-		this._dataIndex++;
 	},
 	/**
 	 * Method to call when the audio is finished.
@@ -340,34 +405,44 @@ VoiceAnalysis.prototype = {
 
 		this.notify('start');
 
+		//Let's standardize magnitudes
 		Utils.logMessage('---------');
 		Utils.logMessage('Standardizing magnitudes...');
 		Utils.logMessage('Max magnitude for this analysis : ' + this._maxMagnitude);
 
 		this._standardizedMagnitudes = [];
+		var i, j, magnitudes;
+		for (i = 0; i < this._magnitudes.length; i++) { //For each data frame
+			magnitudes = this._magnitudes[i]; //Get magnitudes saved at this time
 
-		for (var i = 0; i < this._dataIndex; i++) {
-			var magnitude = this._magnitudes[i];
-			this._standardizedMagnitudes[i] = Utils.Math.getNumWithSetDec(magnitude / this._maxMagnitude * 100);
+			this._standardizedMagnitudes[i] = new Float32Array(magnitudes.length); //Create a new array to store standardized data
+
+			for (j = 0; j < magnitudes.length; j++) {
+				//We want the magnitude in % of the max magnitude
+				this._standardizedMagnitudes[i][j] = Utils.Math.getNumWithSetDec(magnitudes[j] / this._maxMagnitude * 100);
+			}
 		}
 
+		//Now we can determine when does the voice begin and end
+		//Get the tolerance & precision options
 		var tolerance = Utils.Options.get('voice.analysis.tolerance'),
 		precision = Utils.Options.get('voice.analysis.precision');
 
-		this._range = [0, this._dataIndex];
+		this._range = [0, this._dataIndex]; //The voice range
 
-		var requiredFollowingPts = 4,
-		threshold = 8;
+		//Internal options
+		var threshold = 8, //Required freq. magnitude in % to determine the begining/end of the speech
+		requiredFollowingPts = 4; //Required following points wich are > the threshold to determine the begining/end of the speech
 
 		Utils.logMessage('---------');
 		Utils.logMessage('Determining the beginning...');
 
-		var startedSince = 0;
-		for (var i = 0; i < this._dataIndex; i++) {
-			var maxMagnitude = this._standardizedMagnitudes[i];
+		var startedSince = 0, magnitude;
+		for (var i = 0; i < this._magnitudes.length; i++) {
+			magnitude = this._standardizedMagnitudes[i][0];
 
-			if (maxMagnitude > threshold) {
-				Utils.logMessage('Peak detected', i, maxMagnitude + ' > ' + threshold);
+			if (magnitude > threshold) {
+				Utils.logMessage('Peak detected', i, magnitude + ' > ' + threshold);
 				startedSince++;
 			} else if (startedSince) {
 				startedSince = 0;
@@ -383,12 +458,12 @@ VoiceAnalysis.prototype = {
 		Utils.logMessage('---------');
 		Utils.logMessage('Determining the end...');
 
-		var endedSince = 0;
-		for (var i = this._dataIndex - 1; i >= 0; i--) {
-			var maxMagnitude = this._standardizedMagnitudes[i];
+		var endedSince = 0, magnitude;
+		for (var i = this._magnitudes.length - 1; i >= 0; i--) {
+			magnitude = this._standardizedMagnitudes[i][0];
 
-			if (maxMagnitude > threshold) {
-				Utils.logMessage('Peak detected', i, maxMagnitude + ' > ' + threshold);
+			if (magnitude > threshold) {
+				Utils.logMessage('Peak detected', i, magnitude + ' > ' + threshold);
 				endedSince++;
 			} else if (endedSince) {
 				endedSince = 0;
@@ -401,21 +476,25 @@ VoiceAnalysis.prototype = {
 			}
 		}
 
+		//And finally standardize time
 		Utils.logMessage('---------');
 		Utils.logMessage('Standardizing time...');
 
 		this._standardizedTime = [];
 
-		var startTime = this._time[this._range[0]],
-		endTime = this._time[this._range[1]],
-		duration = endTime - startTime;
+		var startTime = this._time[this._range[0]], //Time when the voice begins
+		endTime = this._time[this._range[1]], //Time when the voice ends
+		duration = endTime - startTime; //Voice duration
 
+		//Display some stats
 		Utils.logMessage('Number of points collected : ' + (this._range[1] - this._range[0] + 1));
 		Utils.logMessage('Speaking duration : ' + duration + ' ('+startTime+' -> '+endTime+')');
 
-		for (var i = 0; i < this._dataIndex; i++) {
-			var t = this._time[i] - startTime;
+		var t;
+		for (var i = 0; i < this._magnitudes.length; i++) {
+			t = this._time[i] - startTime; //Time since the begining
 
+			//We want the time in %
 			this._standardizedTime[i] = Utils.Math.getNumWithSetDec(t / duration * 100);
 		}
 
@@ -431,21 +510,35 @@ VoiceAnalysis.prototype = {
 	exportData: function exportData(format) {
 		format = format || 'json';
 
-		switch (format) {
-			case 'csv':
-				var out = 'Time;Time (%);Index;Max magnitude;Max magnitude (%)', status = 0;
+		switch (format) { //Different methods for deffierent export formats
+			case 'csv': //CSV : for spreadsheet
+				var out = 'Time;Standardized time;Frequency;Magnitude;Standardized magnitude',
+				status = 0,
+				analysisFreq = this.frequencies(); //Frequencies on which this analysis is made
 
-				for (var i = 0; i < this._dataIndex; i++) {
-					out += "\n"+this._time[i]+';'+this._standardizedTime[i]+';'+this._magnitudesIndex[i]+';'+this._magnitudes[i]+';'+this._standardizedMagnitudes[i];
+				var i, j, magnitudes;
+				for (i = 0; i < this._magnitudes.length; i++) {
+					magnitudes = this._magnitudes[i]; //Get magnitudes saved at this time
+
+					for (j = 0; j < magnitudes.length; j++) {
+						out += "\n"+this._time[i]+';'+this._standardizedTime[i]+';'+analysisFreq[j]+';'+magnitudes[j]+';'+this._standardizedMagnitudes[i][j];
+					}
 				}
 
 				Utils.Export.exportCSV(out);
 				break;
-			case 'json':
+			case 'json': //JSON : to save as a model
 				var dataToExport = {};
 
 				for (var i = this._range[0]; i <= this._range[1]; i++) {
 					dataToExport[this._standardizedTime[i]] = this._standardizedMagnitudes[i];
+				}
+
+				var i, j, magnitudes;
+				for (i = 0; i < this._magnitudes.length; i++) {
+					magnitudes = this._magnitudes[i]; //Get magnitudes saved at this time
+
+					dataToExport[this._standardizedTime[i]] = magnitudes;
 				}
 
 				Utils.Export.exportJSON(dataToExport);
