@@ -217,16 +217,21 @@ VoiceComparison.prototype = {
 			}
 		}
 
+		//Retrieve options
 		var shiftingEnabled = Utils.Options.get('voice.shifting.enabled'),
 		maxDiff = Utils.Options.get('voice.shifting.maxPtShift'),
 		toleratedRatio = Utils.Options.get('voice.shifting.toleratedRatio');
 
+		//Check if voice shifting is enabled
 		if (!shiftingEnabled) {
 			this._updateStatus(3);
 			return this._data;
 		}
 
-		//TODO: work not done
+		//Get frequencies in common
+		var freqInCommon = this.getFreqInCommon();
+
+		//Create an object to store shifted data
 		var comparableData = {
 			right: [],
 			left: [],
@@ -235,64 +240,76 @@ VoiceComparison.prototype = {
 		left = this._data.left,
 		right = this._data.right;
 
+		//And now shift data
+		//TODO: a global point of view (-> for all frequencies) when shifting voice (cf. "freqShifting")
+
 		var lastLeftIndex = -1,
+		freqIndex,
 		rightMagnitude = 0;
-
 		for (var rightIndex = 0; rightIndex < right.length; rightIndex++) {
-			rightMagnitude = right[rightIndex];
+			comparableData.right.push(new Float32Array(freqInCommon.length));
+			comparableData.left.push(new Float32Array(freqInCommon.length));
 
-			Utils.logMessage('---------');
-			Utils.logMessage('Right : ', rightIndex, rightMagnitude);
+			var freqShifting = []; //Voice shifting value for each frequency
 
-			var j = 0,
-			diff = 0,
-			leftIndex = null,
-			leftMagnitude = null,
-			deviation = 0,
-			ratio = 0,
-			isDiffPositive = true;
+			for (freqIndex = 0; freqIndex < freqInCommon.length; freqIndex++) { //For each frequency
+				rightMagnitude = right[rightIndex][freqIndex];
 
-			do {
-				leftIndex = lastLeftIndex + 1 + ((isDiffPositive) ? 1 : -1) * diff;
+				Utils.logMessage('---------');
+				Utils.logMessage('Right : index: '+rightIndex+'; magnitude: '+rightMagnitude);
 
-				if (leftIndex >= 0 && leftIndex < left.length) {
-					leftMagnitude = left[leftIndex];
+				var j = 0,
+				diff = 0,
+				leftIndex = null,
+				leftMagnitude = null,
+				deviation = 0,
+				ratio = 0,
+				isDiffPositive = true;
+				do {
+					leftIndex = lastLeftIndex + 1 + ((isDiffPositive) ? 1 : -1) * diff;
 
-					deviation = Math.abs(rightMagnitude - leftMagnitude);
-					ratio = deviation / ((rightMagnitude + leftMagnitude) / 2);
+					if (leftIndex >= 0 && leftIndex < left.length) {
+						leftMagnitude = left[leftIndex][freqIndex];
 
-					Utils.logMessage('Left : ', isDiffPositive, rightIndex, leftIndex, rightMagnitude, leftMagnitude, deviation, ratio, (ratio <= toleratedRatio));
+						deviation = Math.abs(rightMagnitude - leftMagnitude);
+						ratio = deviation / ((rightMagnitude + leftMagnitude) / 2);
 
-					if (ratio <= toleratedRatio) {
-						break;
+						Utils.logMessage('Left : positive diff: '+isDiffPositive+'; right index'+rightIndex+'; left index: '+leftIndex+'; right magnitude: '+rightMagnitude+'; left magnitude: '+leftMagnitude+'; deviation: '+deviation+'; ratio: '+ratio+'; ratio < tolerated ratio: '+(ratio <= toleratedRatio));
+
+						if (ratio <= toleratedRatio) {
+							break;
+						}
+					} else {
+						Utils.logMessage('Left : positive diff: '+isDiffPositive+'; right index'+rightIndex+'; left index: '+leftIndex);
+
+						leftMagnitude = null;
+						leftIndex = null;
 					}
-				} else {
-					Utils.logMessage('Left : ', isDiffPositive, rightIndex, leftIndex, false);
 
-					leftMagnitude = null;
-					leftIndex = null;
+					j++;
+					isDiffPositive = (j % 2 == 0) ? true : false;
+					if (isDiffPositive) {
+						diff++;
+					}
+				} while (diff < maxDiff);
+
+				if (leftIndex === null) {
+					leftIndex = lastLeftIndex + 1;
+					leftMagnitude = left[leftIndex][freqIndex];
 				}
 
-				j++;
-				isDiffPositive = (j % 2 == 0) ? true : false;
-				if (isDiffPositive) {
-					diff++;
-				}
-			} while (diff < maxDiff);
+				Utils.logMessage('=> indexes: '+rightIndex+', '+leftIndex+'; magnitudes: '+rightMagnitude+', '+leftMagnitude);
 
-			if (leftIndex === null) {
-				leftIndex = lastLeftIndex + 1;
-				leftMagnitude = left[leftIndex];
+				comparableData.right[rightIndex][freqIndex] = rightMagnitude;
+				comparableData.left[leftIndex][freqIndex] = leftMagnitude;
+
+				freqShifting.push(leftIndex - rightIndex); //Add this frequency shifting to the list
 			}
-
-			Utils.logMessage('=>', rightIndex, leftIndex, rightMagnitude, leftMagnitude);
-
-			comparableData.right.push(rightMagnitude);
-			comparableData.left.push(leftMagnitude);
 
 			lastLeftIndex = leftIndex;
 		}
 
+		//Replace the original data by the shifted data
 		this._data = comparableData;
 
 		this._updateStatus(3);

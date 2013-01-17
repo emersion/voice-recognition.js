@@ -12,7 +12,8 @@ var VoiceModel = function VoiceModel(data) {
 	//Voice data
 	this._data = {
 		magnitude: data.data.magnitude,
-		time: data.data.time
+		time: data.data.time,
+		frequencies: data.data.frequencies
 	};
 };
 VoiceModel.prototype = {
@@ -56,7 +57,17 @@ VoiceModel.prototype = {
 	 * @return {Object}
 	 */
 	standardizedData: function getStandardizedData() {
-		return this._data;
+		return {
+			magnitude: this._data.magnitude,
+			time: this._data.time
+		};
+	},
+	/**
+	 * Get frequencies on which this model is made.
+	 * @return {Number[]} Frequencies on which this model is made.
+	 */
+	frequencies: function frequencies() {
+		return this._data.frequencies;
 	},
 	/**
 	 * Get this model's status.

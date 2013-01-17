@@ -57,7 +57,7 @@
 	 * @param  {Object} data The data.
 	 */
 	Utils.Export.exportJSON = function exportJSON(data) {
-		return Utils.Export.exportData(JSON.stringify(data), 'application/json');
+		return Utils.Export.exportData(JSON.stringify(data, null, "\t"), 'application/json');
 	};
 
 	window.Utils = Utils; //Export API
