@@ -6,6 +6,10 @@ Utils.Options.register('utils.logMessages', 'boolean', '#options-logMessages');
 Utils.Options.register('voice.comparing.showFFT', 'boolean', '#options-showFFT');
 Utils.Options.register('voice.fnChaining', 'boolean', '#options-fnChaining');
 
+Utils.Options.register('voice.analysis.frequencies', 'string', '#options-frequencies');
+
+Utils.Options.register('voice.recording.speakingDelay', 'number', '#options-speaking-delay'); //Delay in seconds when speaking
+
 Utils.Options.register('voice.analysis.tolerance', 'number', '#options-tolerance');
 Utils.Options.register('voice.analysis.precision', 'number', '#options-precision');
 
@@ -130,9 +134,11 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			fileInput: $('#audio-file-input-' + i),
 			speakStart: $('#speak-start-' + i),
 			speakStop: $('#speak-stop-' + i),
+			speakRemainingTime: $('#speak-remaining-time-' + i),
 			audio: $('#audio-element-' + i),
 			canvas: $('#fft-' + i),
 			title: $('#audio-file-name-' + i),
+			editTitle: $('#audio-file-name-edit-' + i),
 			processData: $('#process-data-' + i),
 			exportCSV: $('#export-data-csv-' + i),
 			exportJSON: $('#export-data-json-' + i),
@@ -152,15 +158,51 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			var file = $controls.fileInput[0].files[0];
 			analysis.setInputFile(file);
 		});
+		$controls.editTitle.bind('click', function() {
+			var newTitle = prompt('New name :', analysis.name());
+			analysis.name(newTitle);
+		});
+		var recording = false, remainingTimeInterval;
 		$controls.speakStart.bind('click', function() {
+			if (recording) {
+				return;
+			}
+
 			Recorder.record({
 				start: function() {
-					$controls.speakStop.prop('disabled', false);
-					$controls.speakStart.prop('disabled', true);
+					$controls.speakStop.prop('disabled', false).show();
+					$controls.speakStart.prop('disabled', true).hide();
+
+					//Delay to speak
+					var delayToSpeak = Utils.Options.get('voice.recording.speakingDelay') * 1000, remainingTime;
+					remainingTimeInterval = setInterval(function() {
+						delayToSpeak -= 100;
+						remainingTime = String(Math.round(delayToSpeak / 100) / 10).replace('.', ':');
+						if (remainingTime.indexOf(':') == -1) {
+							remainingTime += ':0';
+						}
+						$controls.speakRemainingTime.html('<i class="icon-time"></i> ' + remainingTime);
+					}, 100);
+					setTimeout(function() {
+						$controls.speakStop.click();
+					}, delayToSpeak);
+
+					recording = true;
 				}
 			});
 		});
 		$controls.speakStop.bind('click', function() {
+			if (!recording) {
+				return;
+			}
+			recording = false;
+
+			clearInterval(remainingTimeInterval);
+			$controls.speakRemainingTime.empty();
+
+			$controls.speakStop.prop('disabled', true).hide();
+			$controls.speakStart.prop('disabled', false).show();
+
 			Recorder.stop();
 
 			var samples = Recorder.audioData();
@@ -227,12 +269,8 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			Utils.Export.exportJSON(dataToExport);
 		});
 
-		analysis.bind('inputchange', function(data) {
-			if (data.file) {
-				$controls.title.html(data.file.name);
-			} else {
-				$controls.title.html('Audio input #' + (analysis.id() + 1));
-			}
+		analysis.bind('namechange', function(data) {
+			$controls.title.html(data.name);
 		});
 
 		analysis.bind('updatestatus', function(data) {
@@ -245,6 +283,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 				}
 			}
 
+			$controls.editTitle.prop('disabled', false);
 			$controls.speakStart.prop('disabled', false);
 
 			if (status > 1) {

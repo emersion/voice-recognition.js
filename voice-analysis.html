@@ -54,7 +54,7 @@
 	
 	<div class="row-fluid">
 		<div class="span6">
-			<h1 id="audio-file-name-0">Audio input #1</h1>
+			<h1><span id="audio-file-name-0">Audio input #1</span> <button class="btn" type="button" id="audio-file-name-edit-0"><i class="icon-pencil"></i></button></h1>
 
 			<ul class="nav nav-tabs">
 				<li class="active"><a href="#input-microphone-0" data-toggle="tab">Microphone</a></li>
@@ -62,9 +62,10 @@
 			</ul>
 			<div class="tab-content">
 				<div class="tab-pane active" id="input-microphone-0">
-					<div class="btn-group">
-						<button class="btn btn-primary btn-large" type="button" id="speak-start-0">Speak</button>
-						<button class="btn btn-large" type="button" id="speak-stop-0" disabled="disabled">Stop</button>
+					<div style="text-align:center;">
+						<button class="btn btn-primary btn-large" type="button" id="speak-start-0"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
+						<button class="btn btn-large btn-danger" type="button" id="speak-stop-0" style="display:none;" disabled="disabled"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
+						<p id="speak-remaining-time-0"></p>
 					</div>
 				</div>
 				<div class="tab-pane" id="input-file-0">
@@ -96,7 +97,7 @@
 			</div>
 		</div>
 		<div class="span6">
-			<h1 id="audio-file-name-1">Audio input #2</h1>
+			<h1><span id="audio-file-name-1">Audio input #2</span> <button class="btn" type="button" id="audio-file-name-edit-1"><i class="icon-pencil"></i></button></h1>
 			
 			<ul class="nav nav-tabs">
 				<li><a href="#input-microphone-1" data-toggle="tab">Microphone</a></li>
@@ -104,9 +105,10 @@
 			</ul>
 			<div class="tab-content">
 				<div class="tab-pane" id="input-microphone-1">
-					<div class="btn-group">
-						<button class="btn btn-primary btn-large" type="button" id="speak-start-1">Speak</button>
-						<button class="btn btn-large" type="button" id="speak-stop-1" disabled="disabled">Stop</button>
+					<div style="text-align:center;">
+						<button class="btn btn-primary btn-large" type="button" id="speak-start-1"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
+						<button class="btn btn-large btn-danger" type="button" id="speak-stop-1" style="display:none;" disabled="disabled"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
+						<p id="speak-remaining-time-1"></p>
 					</div>
 				</div>
 				<div class="tab-pane active" id="input-file-1">
@@ -172,6 +174,22 @@
 				<label class="checkbox" for="options-logMessages"><input type="checkbox" id="options-logMessages" /> Log messages in console</label>
 				<label class="checkbox" for="options-showFFT"><input type="checkbox" id="options-showFFT" checked="checked" /> Show FFT</label>
 				<label class="checkbox" for="options-fnChaining"><input type="checkbox" id="options-fnChaining" checked="checked" /> Enable auto chaining</label>
+			</div>
+		</div>
+
+		<h2>Voice recording</h2>
+		<div class="control-group">
+			<label class="control-label" for="options-speaking-delay">Delay for speaking</label>
+			<div class="controls">
+				<input type="number" value="2" id="options-speaking-delay" class="input-mini"/> seconds
+			</div>
+		</div>
+		
+		<h2>Voice retrieving</h2>
+		<div class="control-group">
+			<label class="control-label" for="options-precision">Frequencies IDs</label>
+			<div class="controls">
+				<input type="text" value="5-40" id="options-frequencies" class="input-mini"/>
 			</div>
 		</div>
 		

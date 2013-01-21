@@ -1,11 +1,12 @@
 Utils.Options.set('utils.math.precision', 6); //Precision of numbers used
-Utils.Options.set('voice.recording.speakingDelay', 2); //Delay in seconds when speaking
 
 //General options which are manageable from inputs
 Utils.Options.register('utils.logMessages', 'boolean', '#options-logMessages');
 Utils.Options.register('voice.comparing.showFFT', 'boolean', '#options-showFFT');
 
 Utils.Options.register('voice.analysis.frequencies', 'string', '#options-frequencies');
+
+Utils.Options.register('voice.recording.speakingDelay', 'number', '#options-speaking-delay'); //Delay in seconds when speaking
 
 Utils.Options.register('voice.analysis.tolerance', 'number', '#options-tolerance');
 Utils.Options.register('voice.analysis.precision', 'number', '#options-precision');
@@ -267,20 +268,27 @@ $recognitionControls.recognize.click(function() {
 });
 
 //Microphone input
+var isRecording = false, remainingTimeInterval;
 $recognitionControls.speakStart.click(function() {
+	if (isRecording) {
+		return;
+	}
+
 	globalProgress.reset();
 	globalProgress.message('Waiting for microphone...');
 
 	var recording = function() {
-		$recognitionControls.speakStop.prop('disabled', false);
-		$recognitionControls.speakStart.prop('disabled', true);
+		isRecording = true;
+
+		$recognitionControls.speakStop.prop('disabled', false).show();
+		$recognitionControls.speakStart.prop('disabled', true).hide();
 
 		globalProgress.partComplete();
 		globalProgress.message('Recording...');
 
 		//Delay to speak
 		var delayToSpeak = Utils.Options.get('voice.recording.speakingDelay') * 1000, remainingTime;
-		var remainingTimeInterval = setInterval(function() {
+		remainingTimeInterval = setInterval(function() {
 			delayToSpeak -= 100;
 			remainingTime = String(Math.round(delayToSpeak / 100) / 10).replace('.', ':');
 			if (remainingTime.indexOf(':') == -1) {
@@ -289,8 +297,6 @@ $recognitionControls.speakStart.click(function() {
 			$recognitionControls.speakRemainingTime.html('<i class="icon-time"></i> ' + remainingTime);
 		}, 100);
 		setTimeout(function() {
-			clearInterval(remainingTimeInterval);
-			$recognitionControls.speakRemainingTime.html('');
 			$recognitionControls.speakStop.click();
 		}, delayToSpeak);
 	};
@@ -341,8 +347,16 @@ $recognitionControls.speakStart.click(function() {
 	}
 });
 $recognitionControls.speakStop.click(function() {
-	$recognitionControls.speakStart.prop('disabled', false);
-	$recognitionControls.speakStop.prop('disabled', true);
+	if (!isRecording) {
+		return;
+	}
+	isRecording = false;
+
+	clearInterval(remainingTimeInterval);
+	$recognitionControls.speakRemainingTime.empty();
+
+	$recognitionControls.speakStart.prop('disabled', false).show();
+	$recognitionControls.speakStop.prop('disabled', true).hide();
 
 	if (navigator.getMedia && (window.AudioContext || window.webkitAudioContext) && false) { //Not supported
 		$recognitionControls.audio[0].pause();

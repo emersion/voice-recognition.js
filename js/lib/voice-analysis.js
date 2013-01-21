@@ -114,7 +114,7 @@ var VoiceAnalysis = function VoiceAnalysis(options) {
 	this._id = options.id;
 	this._$controls = options.controls; //Controles (ex: balise audio)
 	this._status = 0; //Statut de l'analyse
-	this._name = 'Audio input #' + (this.id() + 1); //Nom de l'analyse
+	this._name = (typeof options.name == 'string') ? options.name : 'Audio input #' + (this.id() + 1); //Nom de l'analyse
 	this._frequencies = null;
 };
 VoiceAnalysis.prototype = {
@@ -126,11 +126,19 @@ VoiceAnalysis.prototype = {
 		return this._id;
 	},
 	/**
-	 * Get this analysis' name.
+	 * Get/set this analysis' name.
+	 * @param  {String} [name] If specified, the new analysis' name.
 	 * @return {String}
 	 */
-	name: function getName() {
-		return this._name;
+	name: function name(name) {
+		if (typeof name == 'undefined') {
+			return this._name;
+		} else {
+			this._name = String(name);
+			this.notify('namechange', {
+				name: this._name
+			});
+		}
 	},
 	/**
 	 * Get a control.
@@ -269,7 +277,11 @@ VoiceAnalysis.prototype = {
 		this._name = file.name;
 
 		this.notify('inputchange', {
-			file: file
+			file: file,
+			name: this._name
+		});
+		this.notify('namechange', {
+			name: this._name
 		});
 	},
 	/**
