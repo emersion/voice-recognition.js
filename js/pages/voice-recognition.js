@@ -1,8 +1,11 @@
 Utils.Options.set('utils.math.precision', 6); //Precision of numbers used
+Utils.Options.set('voice.recording.speakingDelay', 2); //Delay in seconds when speaking
 
 //General options which are manageable from inputs
 Utils.Options.register('utils.logMessages', 'boolean', '#options-logMessages');
 Utils.Options.register('voice.comparing.showFFT', 'boolean', '#options-showFFT');
+
+Utils.Options.register('voice.analysis.frequencies', 'string', '#options-frequencies');
 
 Utils.Options.register('voice.analysis.tolerance', 'number', '#options-tolerance');
 Utils.Options.register('voice.analysis.precision', 'number', '#options-precision');
@@ -32,6 +35,7 @@ var $recognitionControls = {
 
 	speakStart: $('#speak-start'),
 	speakStop: $('#speak-stop'),
+	speakRemainingTime: $('#speak-remaining-time'),
 
 	defaultModelsTab: $('#models-default'),
 	fileModelsTab: $('#models-file'),
@@ -69,10 +73,9 @@ var analysis = VoiceAnalysis.build({
 	audio: $recognitionControls.audio,
 	canvas: $recognitionControls.canvas
 });
-analysis.frequencies('3-40');
 analysis.init(); //Initialize the analysis
 
-//Avants
+//Events
 $recognitionControls.audio.bind('playing', function() {
 	analysis.reset();
 
@@ -83,6 +86,9 @@ $recognitionControls.audio.bind('playing', function() {
 	globalProgress.message('Input data retrieved.');
 
 	analysis.processData();
+});
+analysis.bind('ready', function() {
+	analysis.frequencies(Utils.Options.get('voice.analysis.frequencies'));
 });
 analysis.bind('start', function() {
 	globalProgress.message('Analysing input...');
@@ -271,6 +277,22 @@ $recognitionControls.speakStart.click(function() {
 
 		globalProgress.partComplete();
 		globalProgress.message('Recording...');
+
+		//Delay to speak
+		var delayToSpeak = Utils.Options.get('voice.recording.speakingDelay') * 1000, remainingTime;
+		var remainingTimeInterval = setInterval(function() {
+			delayToSpeak -= 100;
+			remainingTime = String(Math.round(delayToSpeak / 100) / 10).replace('.', ':');
+			if (remainingTime.indexOf(':') == -1) {
+				remainingTime += ':0';
+			}
+			$recognitionControls.speakRemainingTime.html('<i class="icon-time"></i> ' + remainingTime);
+		}, 100);
+		setTimeout(function() {
+			clearInterval(remainingTimeInterval);
+			$recognitionControls.speakRemainingTime.html('');
+			$recognitionControls.speakStop.click();
+		}, delayToSpeak);
 	};
 
 	navigator.getMedia = (navigator.getUserMedia ||

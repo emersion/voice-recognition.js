@@ -40,6 +40,7 @@
 			</ul>
 			<div class="tab-content">
 				<div class="tab-pane active" id="input-microphone">
+					<p class="pull-right" id="speak-remaining-time"></p>
 					<div class="btn-group">
 						<button class="btn btn-primary btn-large" type="button" id="speak-start">Speak</button>
 						<button class="btn btn-large" type="button" id="speak-stop" disabled="disabled">Stop</button>
@@ -146,6 +147,14 @@
 			</div>
 		</div>
 		
+		<h2>Voice retrieving</h2>
+		<div class="control-group">
+			<label class="control-label" for="options-precision">Frequencies IDs</label>
+			<div class="controls">
+				<input type="text" value="5-40" id="options-frequencies" class="input-mini"/>
+			</div>
+		</div>
+		
 		<h2>Voice delimiting</h2>
 		<div class="control-group">
 			<label class="control-label" for="options-tolerance">Tolerance</label>
@@ -163,7 +172,7 @@
 		<h2>Voice shifting</h2>
 		<div class="control-group">
 			<div class="controls">
-				<label class="checkbox" for="options-enable-shifting"><input type="checkbox" id="options-enable-shifting" checked="checked"/> Enable voice shifting when comparing</label>
+				<label class="checkbox" for="options-enable-shifting"><input type="checkbox" id="options-enable-shifting"/> Enable voice shifting when comparing</label>
 			</div>
 		</div>
 		<div class="control-group">

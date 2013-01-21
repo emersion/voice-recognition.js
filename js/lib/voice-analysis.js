@@ -291,6 +291,8 @@ VoiceAnalysis.prototype = {
 
 		this._fft = new FFT(this._frameBufferLength / this._channels, this._rate); //The FFT
 
+		this.notify('ready');
+
 		this._updateStatus(1);
 	},
 	/**
@@ -303,6 +305,8 @@ VoiceAnalysis.prototype = {
 		this._magnitudes = []; //Magnitudes
 		this._time = []; //Time
 		this._startTime = null; //Time when the analysis started
+
+		this.notify('ready');
 
 		this._updateStatus(1);
 	},
