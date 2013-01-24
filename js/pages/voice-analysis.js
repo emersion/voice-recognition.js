@@ -151,7 +151,6 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 
 		//Create a new voice analysis
 		var analysis = VoiceAnalysis.build($controls);
-		analysis.frequencies('3-40');
 
 		//Events
 		$controls.fileInput.bind('change', function() {
@@ -168,10 +167,13 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 				return;
 			}
 
+			var frameBuffer, i, processedBuffers = 0, timeInterval;
 			Recorder.record({
-				start: function() {
+				start: function(channels, sampleRate, bufferLength) {
 					$controls.speakStop.prop('disabled', false).show();
 					$controls.speakStart.prop('disabled', true).hide();
+
+					analysis.reset();
 
 					//Delay to speak
 					var delayToSpeak = Utils.Options.get('voice.recording.speakingDelay') * 1000, remainingTime;
@@ -188,6 +190,32 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 					}, delayToSpeak);
 
 					recording = true;
+
+					bufferLength = 512;
+					analysis.ready(channels, sampleRate, bufferLength);
+					frameBuffer = new Float32Array(bufferLength);
+					timeInterval = (1 / sampleRate) * bufferLength;
+				},
+				cancel: function() {
+					globalProgress.error('Speech cancelled.');
+				},
+				progress: function(t, activityLevel) {
+					//...
+				},
+				audioAvailable: function(data, t) {
+					data = data.split(';');
+
+					var processedSamples = 0;
+					while (processedSamples + frameBuffer.length < data.length) {
+						for (i = 0; i < frameBuffer.length; i++) {
+							frameBuffer[i] = data[processedSamples + i] || 0;
+						}
+
+						analysis.audioAvailable(frameBuffer, (processedBuffers + 1) * timeInterval);
+
+						processedSamples += frameBuffer.length;
+						processedBuffers++;
+					}
 				}
 			});
 		});
@@ -205,7 +233,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 
 			Recorder.stop();
 
-			var samples = Recorder.audioData();
+			/*var samples = Recorder.audioData();
 
 			if (samples.length == 0) {
 				console.error('Empty data retrieved. Maybe you should restart Flash ("$ ps -aef | grep flashplayer") ?');
@@ -221,7 +249,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 					frameBuffer[j] = samples[i * bufferLength + j];
 				}
 				analysis.audioAvailable(frameBuffer, i * timeInterval);
-			}
+			}*/
 
 			analysis.ended();
 		});
@@ -271,6 +299,10 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 
 		analysis.bind('namechange', function(data) {
 			$controls.title.html(data.name);
+		});
+
+		analysis.bind('ready', function() {
+			analysis.frequencies(Utils.Options.get('voice.analysis.frequencies'));
 		});
 
 		analysis.bind('updatestatus', function(data) {

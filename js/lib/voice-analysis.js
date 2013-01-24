@@ -415,7 +415,7 @@ VoiceAnalysis.prototype = {
 	 * Process the audio data.
 	 */
 	processData: function processData() {
-		if (this.status() < 2 || !this._magnitudes) {
+		if (this.status() < 2 || !this._magnitudes || this._magnitudes.length == 0) {
 			return false;
 		}
 

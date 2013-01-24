@@ -283,6 +283,9 @@ $recognitionControls.speakStart.click(function() {
 		$recognitionControls.speakStop.prop('disabled', false).show();
 		$recognitionControls.speakStart.prop('disabled', true).hide();
 
+		analysis.reset();
+		globalProgress.reset();
+
 		globalProgress.partComplete();
 		globalProgress.message('Recording...');
 
@@ -336,12 +339,35 @@ $recognitionControls.speakStart.click(function() {
 			globalProgress.error('Can\'t capture microphone : '+((msg) ? msg + ' ('+err+')' : err)+'.');
 		});
 	} else { //Flash fallback
+		var frameBuffer, i, processedBuffers = 0, timeInterval;
 		Recorder.record({
-			start: function() {
+			start: function(channels, sampleRate, bufferLength) {
 				recording();
+				bufferLength = 512;
+				timeInterval = (1 / sampleRate) * bufferLength;
+				analysis.ready(channels, sampleRate, bufferLength);
+				frameBuffer = new Float32Array(bufferLength);
 			},
 			cancel: function() {
 				globalProgress.error('Speech cancelled.');
+			},
+			progress: function(t, activityLevel) {
+				//...
+			},
+			audioAvailable: function(data, t) {
+				data = data.split(';');
+
+				var processedSamples = 0;
+				while (processedSamples + frameBuffer.length < data.length) {
+					for (i = 0; i < frameBuffer.length; i++) {
+						frameBuffer[i] = data[processedSamples + i] || 0;
+					}
+
+					analysis.audioAvailable(frameBuffer, (processedBuffers + 1) * timeInterval);
+
+					processedSamples += frameBuffer.length;
+					processedBuffers++;
+				}
 			}
 		});
 	}
@@ -364,7 +390,7 @@ $recognitionControls.speakStop.click(function() {
 		globalProgress.message('Retrieving recorded data...');
 		Recorder.stop();
 
-		var samples = Recorder.audioData();
+		/*var samples = Recorder.audioData();
 
 		if (samples.length == 0) {
 			globalProgress.error('Empty data retrieved. Maybe you should restart Flash ("$ ps -aef | grep flashplayer") ?');
@@ -380,7 +406,7 @@ $recognitionControls.speakStop.click(function() {
 				frameBuffer[j] = samples[i * bufferLength + j];
 			}
 			analysis.audioAvailable(frameBuffer, i * timeInterval);
-		}
+		}*/
 
 		analysis.ended();
 		analysis.processData();
