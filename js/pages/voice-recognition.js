@@ -340,7 +340,6 @@ $recognitionControls.speakStart.click(function() {
 		});
 	} else { //Flash fallback
 		var frameBuffer, i, processedBuffers = 0, timeInterval;
-		window.liveMicData = '';
 		Recorder.record({
 			start: function(channels, sampleRate, bufferLength) {
 				recording();
@@ -356,7 +355,6 @@ $recognitionControls.speakStart.click(function() {
 				$recognitionControls.speakStop.css('box-shadow', '0px 0px '+(activityLevel / 100) * 50+'px #BD362F');
 			},
 			audioAvailable: function(data, t) {
-				window.liveMicData += data;
 				data = data.split(';');
 
 				var processedSamples = 0;
