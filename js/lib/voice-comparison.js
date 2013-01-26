@@ -4,10 +4,10 @@
  * @param {VoiceAnalysis} right The second voice analysis.
  */
 var VoiceComparison = function VoiceComparison(left, right) {
-	Utils.Observable.call(this);
+	Utils.Observable.call(this); //Inheritance from Utils.Observable
 
-	this._analyses = [left, right];
-	this._data = {};
+	this._analyses = [left, right]; //Array containening both analyses
+	this._data = {}; //The comparison data
 	this._status = 0;
 };
 VoiceComparison.prototype = {
@@ -30,21 +30,23 @@ VoiceComparison.prototype = {
 	 * @private
 	 */
 	_updateStatus: function _updateStatus(status) {
-		status = (typeof status == 'number') ? status : this._status;
+		status = (typeof status == 'number') ? status : this._status; //By default, don't change the status
 		this._status = status;
 
+		//Trigger the event
 		this.notify('updatestatus', { status: status });
 	},
 	/**
 	 * Check if voice analyses are valid.
 	 */
 	checkVoiceAnalyses: function checkVoiceAnalyses() {
-		for (var i = 0; i < this._analyses.length; i++) {
+		for (var i = 0; i < this._analyses.length; i++) { //For each voice analysis, check if the status is >= 3
 			if (this._analyses[i].status() < 3) {
 				return false;
 			}
 		}
 
+		//Check if there are frequencies in common
 		if (!this.getFreqInCommon().length > 0) {
 			return false;
 		}
@@ -52,16 +54,16 @@ VoiceComparison.prototype = {
 		this._updateStatus(1);
 	},
 	/**
-	 * Get frequencies in common of both analyses.
+	 * Get frequencies in common in both analyses.
 	 */
 	getFreqInCommon: function getFreqInCommon() {
 		var i, j, comparisonFrequencies, analysisFrequencies;
-		for (i = 0; i < this._analyses.length; i++) {
-			analysisFrequencies = this._analyses[i].frequencies();
+		for (i = 0; i < this._analyses.length; i++) { //For each analysis
+			analysisFrequencies = this._analyses[i].frequencies(); //Get this frequencies
 
-			if (!comparisonFrequencies) {
+			if (!comparisonFrequencies) { //1st one, define frequencies
 				comparisonFrequencies = analysisFrequencies;
-			} else {
+			} else { //Filter the exsisting list of frequencies
 				for (j = 0; j < comparisonFrequencies.length; j++) {
 					if ($.inArray(comparisonFrequencies[j], analysisFrequencies) == -1) {
 						comparisonFrequencies.splice(j, 1);
@@ -133,14 +135,14 @@ VoiceComparison.prototype = {
 		thickerMagnitude = 0,
 		finerMagnitudes,
 		finerMagnitude = 0;
-		for (var thickerIndex = thicker.range()[0]; thickerIndex <= thicker.range()[1]; thickerIndex++) {
+		for (var thickerIndex = thicker.range()[0]; thickerIndex <= thicker.range()[1]; thickerIndex++) { //For each FFT in the thicker analysis
 			thickerTime = thickerStandardizedData.time[thickerIndex];
 			thickerMagnitudes = thickerStandardizedData.magnitude[thickerIndex];
 
 			thickerComparableData = new Float32Array(freqInCommon.length);
 			finerComparableData = new Float32Array(freqInCommon.length);
 
-			for (var freqIndex = 0; freqIndex < freqInCommon.length; freqIndex++) {
+			for (var freqIndex = 0; freqIndex < freqInCommon.length; freqIndex++) { //For each frequency in common
 				freq = freqInCommon[freqIndex];
 				thickerFreqIndex = $.inArray(freq, thickerFreq);
 				finerFreqIndex = $.inArray(freq, finerFreq);
@@ -149,7 +151,7 @@ VoiceComparison.prototype = {
 				Utils.logMessage('---------');
 				Utils.logMessage('Thicker ('+thickerPos+') : index: '+thickerIndex+'; time: '+thickerTime+'; freq: '+freq+'; magnitude: '+thickerMagnitude);
 
-				for (var finerIndex = finer.range()[0]; finerIndex <= finer.range()[1]; finerIndex++) {
+				for (var finerIndex = finer.range()[0]; finerIndex <= finer.range()[1]; finerIndex++) { //For each FFT in the finer analysis
 					finerTime = finerStandardizedData.time[finerIndex];
 					finerMagnitude = finerStandardizedData.magnitude[finerIndex][finerFreqIndex];
 					
@@ -159,11 +161,11 @@ VoiceComparison.prototype = {
 				}
 
 				var finerMagnitudeForThickerTime;
-				if (finerTime == thickerTime) {
+				if (finerTime == thickerTime) { //Time values for this FFT matches
 					finerMagnitudeForThickerTime = finerMagnitude;
 
 					Utils.logMessage('Finer ('+finerPos+') : index: '+finerIndex+'; time: '+finerTime+'; magnitude: '+finerMagnitude);
-				} else {
+				} else { //Doesn't match, we'll have to calculate the finer magnitude for the thicker time with the derivative number
 					var finerPreviousIndex = finerIndex - 1,
 					finerPreviousTime = finerStandardizedData.time[finerPreviousIndex],
 					finerPreviousMagnitude = finerStandardizedData.magnitude[finerPreviousIndex][finerFreqIndex];
@@ -180,6 +182,7 @@ VoiceComparison.prototype = {
 				finerComparableData[freqIndex] = finerMagnitudeForThickerTime;
 			}
 
+			//Store new data in arrays
 			comparableData[thickerPos].push(thickerComparableData);
 			comparableData[finerPos].push(finerComparableData);
 			comparableData.time.push(thickerTime);
@@ -209,6 +212,7 @@ VoiceComparison.prototype = {
 	},
 	/**
 	 * Shift voice analyses' data.
+	 * @deprecated This algotithm doesn't work well - DO NOT USE !
 	 */
 	shiftData: function shiftData() {
 		if (this.status() < 2) {
@@ -339,11 +343,12 @@ VoiceComparison.prototype = {
 		var deviations = [];
 
 		var rightMagnitude, leftMagnitude, deviationPercentage, ratio, deviation;
-		for (var i = 0; i < comparableData.right.length; i++) {
-			for (var j = 0; j < freqInCommon.length; j++) {
+		for (var i = 0; i < comparableData.right.length; i++) { //For each comparable FFTs
+			for (var j = 0; j < freqInCommon.length; j++) { //For each frequency in common
 				rightMagnitude = comparableData.right[i][j];
 				leftMagnitude = comparableData.left[i][j];
 
+				//Calculate the deviation %
 				deviationPercentage = Math.abs(rightMagnitude - leftMagnitude);
 				ratio = deviationPercentage / ((rightMagnitude + leftMagnitude) / 2);
 
@@ -351,18 +356,22 @@ VoiceComparison.prototype = {
 			}
 		}
 		
+		//Calculate the average deviation
 		var avg = Utils.Math.getAverageFromNumArr(deviations),
 		std = Utils.Math.getStandardDeviation(deviations);
 
+		//... And we've done !
 		this._deviations = deviations;
 		this._avg = avg;
 		this._std = std;
 
+		//Log final data
 		Utils.logMessage('---------');
 		Utils.logMessage('Compare :');
 		Utils.logMessage('Avg : ' + avg);
 		Utils.logMessage('Std : ' + std);
 
+		//Trigger the event
 		this.notify('compare', {
 			deviations: deviations,
 			result: {

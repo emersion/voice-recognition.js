@@ -1,0 +1,23 @@
+.tab-content {
+    overflow: visible;
+}
+
+.btn-speak-container {
+	text-align: center;
+}
+
+.btn-speak {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+.btn-speak img {
+	width: 100px;
+	height: 100px;
+}
+
+.fft-container {
+	text-align: center;
+}
+.fft-container audio {
+	width: 100%;
+}

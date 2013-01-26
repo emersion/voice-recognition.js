@@ -46,6 +46,7 @@ var Recorder = {
 		options = options || {};
 		this.clearBindings("recordingStart");
 		this.clearBindings("recordingProgress");
+		this.clearBindings("recordingAudioAvailable");
 		this.clearBindings("recordingCancel");
 
 		this.bind('recordingStart',  this._defaultOnHideFlash);
@@ -55,6 +56,7 @@ var Recorder = {
 
 		this.bind('recordingStart',    options['start']);
 		this.bind('recordingProgress', options['progress']);
+		this.bind('recordingAudioAvailable', options['audioAvailable']);
 		this.bind('recordingCancel',   options['cancel']);
 
 		this.flashInterface().record();
@@ -113,11 +115,11 @@ var Recorder = {
 		Recorder._events[eventName].push(fn);
 	},
 	
-	triggerEvent: function(eventName, arg0, arg1){
+	triggerEvent: function(eventName, arg0, arg1, arg2){
 		Recorder._executeInWindowContext(function(){
 			for(var cb in Recorder._events[eventName]){
 				if(Recorder._events[eventName][cb]){
-					Recorder._events[eventName][cb].apply(Recorder, [arg0, arg1]);
+					Recorder._events[eventName][cb].apply(Recorder, [arg0, arg1, arg2]);
 				}
 			}
 		});

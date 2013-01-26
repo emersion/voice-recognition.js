@@ -41,7 +41,7 @@
 	Utils.Math.getAverageFromNumArr = function getAverageFromNumArr(numArr, numOfDec, range) {
 		range = range || [0, numArr.length - 1];
 
-		if (numArr.length == 0) {
+		if (numArr.length == 0) { //Empty data
 			return Number.NaN;
 		}
 
@@ -64,7 +64,7 @@
 	Utils.Math.getVariance = function getVariance(numArr, numOfDec, range) {
 		range = range || [0, numArr.length - 1];
 
-		if (numArr.length == 0) {
+		if (numArr.length == 0) { //Empty data
 			return Number.NaN;
 		}
 

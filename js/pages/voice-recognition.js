@@ -283,6 +283,9 @@ $recognitionControls.speakStart.click(function() {
 		$recognitionControls.speakStop.prop('disabled', false).show();
 		$recognitionControls.speakStart.prop('disabled', true).hide();
 
+		analysis.reset();
+		globalProgress.reset();
+
 		globalProgress.partComplete();
 		globalProgress.message('Recording...');
 
@@ -336,12 +339,37 @@ $recognitionControls.speakStart.click(function() {
 			globalProgress.error('Can\'t capture microphone : '+((msg) ? msg + ' ('+err+')' : err)+'.');
 		});
 	} else { //Flash fallback
+		var frameBuffer, i, processedBuffers = 0, timeInterval;
+		window.liveMicData = '';
 		Recorder.record({
-			start: function() {
+			start: function(channels, sampleRate, bufferLength) {
 				recording();
+				bufferLength = 512;
+				timeInterval = (1 / sampleRate) * bufferLength;
+				analysis.ready(channels, sampleRate, bufferLength);
+				frameBuffer = new Float32Array(bufferLength);
 			},
 			cancel: function() {
 				globalProgress.error('Speech cancelled.');
+			},
+			progress: function(t, activityLevel) {
+				$recognitionControls.speakStop.css('box-shadow', '0px 0px '+(activityLevel / 100) * 50+'px #BD362F');
+			},
+			audioAvailable: function(data, t) {
+				window.liveMicData += data;
+				data = data.split(';');
+
+				var processedSamples = 0;
+				while (processedSamples + frameBuffer.length < data.length) {
+					for (i = 0; i < frameBuffer.length; i++) {
+						frameBuffer[i] = data[processedSamples + i] || 0;
+					}
+
+					analysis.audioAvailable(frameBuffer, (processedBuffers + 1) * timeInterval);
+
+					processedSamples += frameBuffer.length;
+					processedBuffers++;
+				}
 			}
 		});
 	}
@@ -356,30 +384,18 @@ $recognitionControls.speakStop.click(function() {
 	$recognitionControls.speakRemainingTime.empty();
 
 	$recognitionControls.speakStart.prop('disabled', false).show();
-	$recognitionControls.speakStop.prop('disabled', true).hide();
+	$recognitionControls.speakStop.prop('disabled', true).hide().css('box-shadow', 'none');
 
 	if (navigator.getMedia && (window.AudioContext || window.webkitAudioContext) && false) { //Not supported
 		$recognitionControls.audio[0].pause();
 	} else {
 		globalProgress.message('Retrieving recorded data...');
+
 		Recorder.stop();
 
-		var samples = Recorder.audioData();
-
-		if (samples.length == 0) {
+		if (analysis.length() == 0) {
 			globalProgress.error('Empty data retrieved. Maybe you should restart Flash ("$ ps -aef | grep flashplayer") ?');
 			return;
-		}
-
-		var channels = 1, sampleRate = 44100, bufferLength = 512, timeInterval = 1 / (sampleRate / bufferLength);
-		analysis.ready(channels, sampleRate, bufferLength);
-
-		for (var i = 0; i < samples.length / bufferLength; i++) {
-			var frameBuffer = new Float32Array(bufferLength);
-			for (var j = 0; j < bufferLength; j++) {
-				frameBuffer[j] = samples[i * bufferLength + j];
-			}
-			analysis.audioAvailable(frameBuffer, i * timeInterval);
 		}
 
 		analysis.ended();

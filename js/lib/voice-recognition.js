@@ -86,6 +86,7 @@ VoiceModel.prototype = {
 var VoiceRecognition = function VoiceRecognition() {
 	Utils.Observable.call(this); // Inheritance from Observable
 
+	//Initialize properties
 	this._status = 0;
 	this._input = null;
 	this._models = [];
@@ -109,6 +110,7 @@ VoiceRecognition.prototype = {
 		status = (typeof status == 'number') ? status : this._status;
 		this._status = status;
 
+		//Trigger the event
 		this.notify('updatestatus', { status: status });
 	},
 	/**
@@ -118,6 +120,7 @@ VoiceRecognition.prototype = {
 	setInputAnalysis: function setInputAnalysis(analysis) {
 		this._input = analysis;
 
+		//Trigger the event
 		this.notify('inputchange', {
 			analysis: analysis
 		});
@@ -129,6 +132,7 @@ VoiceRecognition.prototype = {
 	setVoiceModels: function setVoiceModels(models) {
 		this._models = models;
 
+		//Trigger the events
 		this.notify('modelschange', {
 			models: models
 		});
@@ -140,7 +144,7 @@ VoiceRecognition.prototype = {
 	countVoiceModels: function countVoiceModels() {
 		var nbr = 0;
 
-		for (var i = 0; i < this._models.length; i++) {
+		for (var i = 0; i < this._models.length; i++) { //For each model set
 			nbr += this._models[i].models.length;
 		}
 
@@ -161,25 +165,25 @@ VoiceRecognition.prototype = {
 		var avgs = [], stds = [];
 		var modelSetsAvgs = [], modelSetsStds = [], modelSetMinAvg, modelSetIndex;
 
-		for (var i = 0; i < this._models.length; i++) {
+		for (var i = 0; i < this._models.length; i++) { //For each model set
 			(function(modelSet) {
 				avgs[i] = [];
 				stds[i] = [];
 
-				for (var j = 0; j < modelSet.models.length; j++) {
+				for (var j = 0; j < modelSet.models.length; j++) { //For each voice model in the model set
 					(function(modelData) {
-						var model = new VoiceModel(modelData);
+						var model = new VoiceModel(modelData); //Build a new voice model
 
-						var comparison = VoiceComparison.build(model, analysis);
+						var comparison = VoiceComparison.build(model, analysis); //... And a new voice comparison
 
 						that.notify('comparestart', {
 							model: model,
 							comparison: comparison
 						});
 
-						var result = comparison.compareData();
+						var result = comparison.compareData(); //Compare the model & the analysis
 
-						if (result === false) {
+						if (result === false) { //An error occured
 							that.notify('compareerror', {
 								model: model,
 								comparison: comparison
@@ -198,16 +202,18 @@ VoiceRecognition.prototype = {
 					})(modelSet.models[j]);
 				}
 
+				//Store calculated data
 				modelSetsAvgs[i] = Utils.Math.getAverageFromNumArr(avgs[i]);
 				modelSetsStds[i] = Utils.Math.getAverageFromNumArr(stds[i]);
 
-				if (typeof modelSetMinAvg == 'undefined' || modelSetsAvgs[i] < modelSetMinAvg) {
+				if (typeof modelSetMinAvg == 'undefined' || modelSetsAvgs[i] < modelSetMinAvg) { //If it's the lowest deviation average
 					modelSetMinAvg = modelSetsAvgs[i];
 					modelSetIndex = i;
 				}
 			})(this._models[i]);
 		}
 
+		//Finally, create an object containing all data
 		this._data = {
 			models: {
 				avgs: avgs,
@@ -219,17 +225,20 @@ VoiceRecognition.prototype = {
 			}
 		};
 
+		//Duplicate this._data.modelSets.avgs in a new array
 		var modelsAvgs = [];
 		for (var i = 0; i < this._data.modelSets.avgs.length; i++) {
 			modelsAvgs.push(this._data.modelSets.avgs[i]);
 		}
 
-		modelsAvgs.sort();
+		modelsAvgs.sort(); //Sort values in this array
 
+		//Determine the error average
 		this._stats = {
 			avgError: Utils.Math.getNumWithSetDec(modelsAvgs[0] / modelsAvgs[1])
 		};
 
+		//Final result
 		var modelSetName = this._models[modelSetIndex].name;
 		this._result = modelSetIndex;
 
@@ -237,6 +246,7 @@ VoiceRecognition.prototype = {
 		Utils.logMessage('---------');
 		Utils.logMessage(this._data);
 
+		//Trigger the event
 		this.notify('complete', {
 			data: this._data,
 			stats: this._stats,
