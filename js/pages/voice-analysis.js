@@ -200,7 +200,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 					globalProgress.error('Speech cancelled.');
 				},
 				progress: function(t, activityLevel) {
-					//...
+					$controls.speakStop.css('box-shadow', '0px 0px '+(activityLevel / 100) * 50+'px #BD362F');
 				},
 				audioAvailable: function(data, t) {
 					data = data.split(';');
@@ -228,28 +228,15 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			clearInterval(remainingTimeInterval);
 			$controls.speakRemainingTime.empty();
 
-			$controls.speakStop.prop('disabled', true).hide();
-			$controls.speakStart.prop('disabled', false).show();
+			//$controls.speakStop.prop('disabled', true).hide().css('box-shadow', 'none');
+			//$controls.speakStart.prop('disabled', false).show();
 
 			Recorder.stop();
 
-			/*var samples = Recorder.audioData();
-
-			if (samples.length == 0) {
-				console.error('Empty data retrieved. Maybe you should restart Flash ("$ ps -aef | grep flashplayer") ?');
+			if (analysis.length() == 0) {
+				globalProgress.error('Empty data retrieved. Maybe you should restart Flash ("$ ps -aef | grep flashplayer") ?');
 				return;
 			}
-
-			var channels = 1, sampleRate = 44100, bufferLength = 512, timeInterval = 1 / (sampleRate / 1000);
-			analysis.ready(channels, sampleRate, bufferLength);
-
-			for (var i = 0; i < samples.length / bufferLength; i++) {
-				var frameBuffer = new Float32Array(bufferLength);
-				for (var j = 0; j < bufferLength; j++) {
-					frameBuffer[j] = samples[i * bufferLength + j];
-				}
-				analysis.audioAvailable(frameBuffer, i * timeInterval);
-			}*/
 
 			analysis.ended();
 		});
@@ -317,6 +304,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 
 			$controls.editTitle.prop('disabled', false);
 			$controls.speakStart.prop('disabled', false);
+			$controls.speakStop.prop('disabled', false);
 
 			if (status > 1) {
 				$controls.processData.prop('disabled', false);

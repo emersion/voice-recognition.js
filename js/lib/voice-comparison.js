@@ -129,8 +129,8 @@ VoiceComparison.prototype = {
 		thickerTime = 0,
 		finerTime = 0,
 		thickerMagnitudes,
-		thickerComparableData = new Float32Array(freqInCommon.length),
-		finerComparableData = new Float32Array(freqInCommon.length),
+		thickerComparableData,
+		finerComparableData,
 		freq = 0,
 		thickerMagnitude = 0,
 		finerMagnitudes,
@@ -138,6 +138,9 @@ VoiceComparison.prototype = {
 		for (var thickerIndex = thicker.range()[0]; thickerIndex <= thicker.range()[1]; thickerIndex++) { //For each FFT in the thicker analysis
 			thickerTime = thickerStandardizedData.time[thickerIndex];
 			thickerMagnitudes = thickerStandardizedData.magnitude[thickerIndex];
+
+			thickerComparableData = new Float32Array(freqInCommon.length);
+			finerComparableData = new Float32Array(freqInCommon.length);
 
 			for (var freqIndex = 0; freqIndex < freqInCommon.length; freqIndex++) { //For each frequency in common
 				freq = freqInCommon[freqIndex];

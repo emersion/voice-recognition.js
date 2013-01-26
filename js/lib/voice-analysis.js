@@ -167,6 +167,34 @@ VoiceAnalysis.prototype = {
 		return this._status;
 	},
 	/**
+	 * Get the number of channels of the audio stream.
+	 * @return {Number}
+	 */
+	channels: function getChannelsNbr() {
+		return this._channels;
+	},
+	/**
+	 * Get the sample rate of the audio stream.
+	 * @return {Number}
+	 */
+	sampleRate: function getSampleRate() {
+		return this._rate;
+	},
+	/**
+	 * Get the frame buffer length of the audio stream.
+	 * @return {Number}
+	 */
+	frameBufferLength: function getFrameBufferLength() {
+		return this._frameBufferLength;
+	},
+	/**
+	 * Get the number of magnitudes retrieved.
+	 * @return {Number}
+	 */
+	length: function getLength() {
+		return this._magnitudes.length;
+	},
+	/**
 	 * Get the analysis' range (when does the speaker speak).
 	 * @return {Number[]} An array containing two indexes : the begining & the end.
 	 */
