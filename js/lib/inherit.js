@@ -35,10 +35,11 @@
 	 * @returns {Boolean} True if the object if an instance of the specified class.
 	 */
 	Utils.isInstanceOf = function isInstanceOf(instance, obj) {
-		if (!instance || typeof instance != 'object' || !obj) {
+		if (!instance || typeof instance != 'object' || !obj) { //Bad arguments
 			return false;
 		}
 
+		//Try to get object's anscestors using instance.constructor and instance.constructor._parent
 		var current;
 		do {
 			if (current) {
@@ -52,6 +53,7 @@
 			}
 		} while (current._parent);
 
+		//Is it a direct instance of the specified class ?
 		try {
 			if (instance instanceof obj) {
 				return true;

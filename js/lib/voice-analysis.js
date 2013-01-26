@@ -1,11 +1,15 @@
 /**
- * A Fast Fourrier Transform.
+ * FFT is a class for calculating the Discrete Fourier Transform of a signal.
+ * with the Fast Fourier Transform algorithm.
  * @see <a href="https://github.com/corbanbrook/dsp.js">https://github.com/corbanbrook/dsp.js</a>
+ *
+ * @param {Number} bufferSize The size of the sample buffer to be computed. Must be power of 2.
+ * @param {Number} sampleRate The sampleRate of the buffer (eg. 44100).
+ *
  * @constructor
- * @param {Number} bufferSize The buffer size (e.g. 1024).
- * @param {Number} sampleRate The sample rate (e.g. 44100).
  */
 var FFT = function FFT(bufferSize, sampleRate) {
+	//Initialize variables
 	this.bufferSize   = bufferSize;
 	this.sampleRate   = sampleRate;
 	this.spectrum     = new Float32Array(bufferSize/2);
@@ -34,10 +38,15 @@ var FFT = function FFT(bufferSize, sampleRate) {
 };
 
 /**
- * Forward a signal.
- * @param  {Float32Array} buffer The audio data.
+ * Performs a forward transform on the sample buffer.
+ * Converts a time domain signal to frequency domain spectra.
+ *
+ * @param {Array} buffer The sample buffer. Buffer Length must be power of 2.
+ *
+ * @return The frequency spectrum array.
  */
 FFT.prototype.forward = function forward(buffer) {
+	// Locally scope variables for speed up
 	var bufferSize   = this.bufferSize,
 	cosTable     = this.cosTable,
 	sinTable     = this.sinTable,
@@ -63,7 +72,7 @@ FFT.prototype.forward = function forward(buffer) {
 	off,
 	tr,
 	ti,
-	tmpReal,	
+	tmpReal,
 	i;
 
 	while ( halfSize < bufferSize ) {
@@ -96,7 +105,7 @@ FFT.prototype.forward = function forward(buffer) {
 		halfSize = halfSize << 1;
 	}
 
-	i = bufferSize/2;
+	i = bufferSize / 2;
 	while(i--) {
 		spectrum[i] = 2 * Math.sqrt(real[i] * real[i] + imag[i] * imag[i]) / bufferSize;
 	}
@@ -108,13 +117,13 @@ FFT.prototype.forward = function forward(buffer) {
  * @param {Object} options Some options such as id and controls.
  */
 var VoiceAnalysis = function VoiceAnalysis(options) {
-	Utils.Observable.call(this); //Heritage de Observable.
+	Utils.Observable.call(this); //Inheritance from Observable.
 
-	//Definition des proprietes de l'objet
+	//Define object's properties
 	this._id = options.id;
-	this._$controls = options.controls; //Controles (ex: balise audio)
-	this._status = 0; //Statut de l'analyse
-	this._name = (typeof options.name == 'string') ? options.name : 'Audio input #' + (this.id() + 1); //Nom de l'analyse
+	this._$controls = options.controls; //Controls (e.g. the audio tag)
+	this._status = 0; //Analysis' status
+	this._name = (typeof options.name == 'string') ? options.name : 'Audio input #' + (this.id() + 1); //Analysis' name
 	this._frequencies = null;
 };
 VoiceAnalysis.prototype = {
@@ -131,10 +140,12 @@ VoiceAnalysis.prototype = {
 	 * @return {String}
 	 */
 	name: function name(name) {
-		if (typeof name == 'undefined') {
+		if (typeof name == 'undefined') { //Getter
 			return this._name;
-		} else {
-			this._name = String(name);
+		} else { //Setter
+			this._name = String(name); //Save the new name
+
+			//Trigger the event
 			this.notify('namechange', {
 				name: this._name
 			});
@@ -168,8 +179,8 @@ VoiceAnalysis.prototype = {
 	 */
 	standardizedData: function getStandardizedData() {
 		return {
-			magnitude: this._standardizedMagnitudes,
-			time: this._standardizedTime
+			magnitude: this._standardizedMagnitudes, //Magnitudes
+			time: this._standardizedTime //Time
 		};
 	},
 	/**
@@ -178,15 +189,15 @@ VoiceAnalysis.prototype = {
 	 * @return {Number[]|null}        Frequencies on which this analysis is made.
 	 */
 	frequencies: function frequencies(freq) {
-		if (typeof freq == 'undefined') {
+		if (typeof freq == 'undefined') { //Getter
 			return this._frequencies;
-		} else {
+		} else { //Setter
 			switch (typeof freq) {
-				case 'number':
+				case 'number': //If a number is specified, make the analysis on this one
 					freq = [freq];
 					break;
-				case 'string':
-					if (/^[0-9]+-[0-9]+$/.test(freq)) {
+				case 'string': //If a string is specified
+					if (/^[0-9]+-[0-9]+$/.test(freq)) { //E.g. "7-40" -> frequencies from 7 to 40
 						var result = /^([0-9]+)-([0-9]+)$/.exec(freq),
 						range = [parseInt(result[1]), parseInt(result[2])];
 
@@ -198,11 +209,11 @@ VoiceAnalysis.prototype = {
 						for (var i = range[0]; i <= range[1]; i++) {
 							freq.push(i);
 						}
-					} else if (/^[0-9]+$/.test(freq)) {
+					} else if (/^[0-9]+$/.test(freq)) { //E.g. "36"
 						freq = [parseInt(freq)];
 					}
 					break;
-				case 'object':
+				case 'object': //If an object is specified
 					if (freq instanceof Array) {
 						//Use the array as is
 						//freq = freq;
@@ -210,45 +221,15 @@ VoiceAnalysis.prototype = {
 						return false;
 					}
 					break;
-				default:
+				default: //Wrong value
 					return false;
 			}
 
+			//Sort frequencies
 			freq.sort();
 
 			this._frequencies = freq;
 		}
-	},
-	/**
-	 * Initialize the analysis.
-	 */
-	init: function init() {
-		var that = this;
-
-		this.control('audio')
-			.bind('MozAudioAvailable', function(e) {
-				var event = e.originalEvent;
-
-				that.audioAvailable(event.frameBuffer, event.time);
-			})
-			.bind('loadedmetadata', function() {
-				var channels, sampleRate, frameBufferLength;
-
-				try {
-					channels          = that.control('audio')[0].mozChannels;
-					sampleRate        = that.control('audio')[0].mozSampleRate;
-					frameBufferLength = that.control('audio')[0].mozFrameBufferLength;
-				} catch (err) {
-					return;
-				}
-
-				that.ready(channels, sampleRate, frameBufferLength);
-			})
-			.bind('ended pause', function() {
-				that.ended();
-			});
-
-		this._updateStatus();
 	},
 	/**
 	 * Update this analysis' status.
@@ -264,18 +245,50 @@ VoiceAnalysis.prototype = {
 		VoiceAnalysis._updatedStatus(this);
 	},
 	/**
+	 * Initialize the analysis.
+	 */
+	init: function init() {
+		var that = this;
+
+		this.control('audio')
+			.bind('MozAudioAvailable', function(e) { //When audio is available
+				var event = e.originalEvent;
+
+				that.audioAvailable(event.frameBuffer, event.time); //Process the audio data
+			})
+			.bind('loadedmetadata', function() { //When metadata are loaded
+				var channels, sampleRate, frameBufferLength;
+
+				try {
+					channels          = that.control('audio')[0].mozChannels;
+					sampleRate        = that.control('audio')[0].mozSampleRate;
+					frameBufferLength = that.control('audio')[0].mozFrameBufferLength;
+				} catch (err) {
+					return;
+				}
+
+				that.ready(channels, sampleRate, frameBufferLength);
+			})
+			.bind('ended pause', function() { //On pause/end
+				that.ended();
+			});
+
+		this._updateStatus();
+	},
+	/**
 	 * Set this analysis' input file.
 	 * @param {File} file The file.
 	 */
 	setInputFile: function setInputFile(file) {
-		if (!file) {
+		if (!file) { //If no file is specified
 			return;
 		}
 
 		this._input = file;
-		this.control('audio').attr('src', window.URL.createObjectURL(file));
+		this.control('audio').attr('src', window.URL.createObjectURL(file)); //Create an URL pointing to this file
 		this._name = file.name;
 
+		//Trigger events
 		this.notify('inputchange', {
 			file: file,
 			name: this._name
@@ -286,11 +299,14 @@ VoiceAnalysis.prototype = {
 	},
 	/**
 	 * Initialize this analysis when the audio element is ready.
+	 * @param {Number} channels          The number of channels in the audio data.
+	 * @param {Number} sampleRate        The audio sample rate (e.g. 44100 Hz).
+	 * @param {Number} frameBufferLength The frame buffer length
 	 */
 	ready: function ready(channels, sampleRate, frameBufferLength) {
 		this._channels = channels;
 		this._rate = sampleRate;
-		this._frameBufferLength = frameBufferLength; //The frame buffer length
+		this._frameBufferLength = frameBufferLength;
 
 		this._maxMagnitude = 0; //The analysis' max. magnitude value
 		this._maxMagnitudeFreq = null; //The analysis' max. magnitude frequency
@@ -303,7 +319,7 @@ VoiceAnalysis.prototype = {
 
 		this._fft = new FFT(this._frameBufferLength / this._channels, this._rate); //The FFT
 
-		this.notify('ready');
+		this.notify('ready'); //Trigger the event
 
 		this._updateStatus(1);
 	},
@@ -318,7 +334,7 @@ VoiceAnalysis.prototype = {
 		this._time = []; //Time
 		this._startTime = null; //Time when the analysis started
 
-		this.notify('ready');
+		this.notify('ready'); //Trigger the event
 
 		this._updateStatus(1);
 	},
@@ -368,10 +384,10 @@ VoiceAnalysis.prototype = {
 		maxMagnitude = 0,
 		maxMagnitudeFreq;
 
-		for (var i = 0; i < this._fft.spectrum.length; i++ ) {
+		for (var i = 0; i < this._fft.spectrum.length; i++ ) { //For each frequency
 			var isMagnitudeSaved = ($.inArray(i, analysisFreq) != -1); //Is this magnitude saved ?
 
-			if (!showFFT && !isMagnitudeSaved) {
+			if (!showFFT && !isMagnitudeSaved) { //If we don't show the FFT or we don't save this magnitude value
 				continue; //Ignore this magnitude
 			}
 
@@ -387,7 +403,7 @@ VoiceAnalysis.prototype = {
 				magnitudes[freqIndex] = magnitude;
 				freqIndex++;
 
-				if (magnitude > maxMagnitude) { //Is this the max. magnitude ?
+				if (magnitude > maxMagnitude) { //Is this the max. magnitude in the FFT ?
 					maxMagnitude = magnitude;
 					maxMagnitudeFreq = freqIndex;
 				}
@@ -450,42 +466,44 @@ VoiceAnalysis.prototype = {
 		var threshold = 8, //Required freq. magnitude in % to determine the begining/end of the speech
 		requiredFollowingPts = 4; //Required following points wich are > the threshold to determine the begining/end of the speech
 
+		//Detect the begining
 		Utils.logMessage('---------');
 		Utils.logMessage('Determining the beginning...');
 
 		var startedSince = 0, magnitude;
-		for (var i = 0; i < this._magnitudes.length; i++) {
-			magnitude = this._standardizedMagnitudes[i][0];
+		for (var i = 0; i < this._magnitudes.length; i++) { //For each data frame from left to right (forward)
+			magnitude = this._standardizedMagnitudes[i][0]; //Get the first magnitude of the FFT
 
-			if (magnitude > threshold) {
+			if (magnitude > threshold) { //If the magnitude if greater than the threshold
 				Utils.logMessage('Peak detected', i, magnitude + ' > ' + threshold);
 				startedSince++;
 			} else if (startedSince) {
 				startedSince = 0;
 			}
 
-			if (startedSince >= requiredFollowingPts) {
+			if (startedSince >= requiredFollowingPts) { //If the magnitude if greater than the threshold during a certain number of data frames, it's the begining
 				this._range[0] = i - startedSince + 1;
 				Utils.logMessage('=> Begining detected', this._range[0]);
 				break;
 			}
 		}
 
+		//Detect the end
 		Utils.logMessage('---------');
 		Utils.logMessage('Determining the end...');
 
 		var endedSince = 0, magnitude;
-		for (var i = this._magnitudes.length - 1; i >= 0; i--) {
-			magnitude = this._standardizedMagnitudes[i][0];
+		for (var i = this._magnitudes.length - 1; i >= 0; i--) {  //For each data frame from right to left (backward)
+			magnitude = this._standardizedMagnitudes[i][0]; //Get the first magnitude of the FFT
 
-			if (magnitude > threshold) {
+			if (magnitude > threshold) { //If the magnitude if greater than the threshold
 				Utils.logMessage('Peak detected', i, magnitude + ' > ' + threshold);
 				endedSince++;
 			} else if (endedSince) {
 				endedSince = 0;
 			}
 
-			if (endedSince >= requiredFollowingPts) {
+			if (endedSince >= requiredFollowingPts) { //If the magnitude if greater than the threshold during a certain number of data frames, it's the end
 				this._range[1] = i + endedSince - 1;
 				Utils.logMessage('=> End detected', this._range[1]);
 				break;
@@ -517,7 +535,7 @@ VoiceAnalysis.prototype = {
 
 		this._updateStatus(3);
 
-		this.notify('complete');
+		this.notify('complete'); //Trigger the event : we've finished with this voice analysis !
 	},
 	/**
 	 * Export the audio data.
@@ -581,12 +599,13 @@ VoiceAnalysis._items = [];
  * @return {VoiceAnalysis}   The voice analysis.
  */
 VoiceAnalysis.build = function build(controls) {
+	//Create a new analysis instance
 	var analysis = new VoiceAnalysis({
 		id: VoiceAnalysis._items.length,
 		controls: controls
 	});
 
-	VoiceAnalysis._items.push(analysis);
+	VoiceAnalysis._items.push(analysis); //Add this analysis to the list
 
 	return analysis;
 };
@@ -606,11 +625,13 @@ VoiceAnalysis.items = function items() {
  */
 VoiceAnalysis._updatedStatus = function _updatedStatus(analysis) {
 	var analyses = VoiceAnalysis.items(), globalMinStatus;
-	for (var i = 0; i < analyses.length; i++) {
+	for (var i = 0; i < analyses.length; i++) { //For each analysis
+		//Check if this status is the lower one
 		if (typeof globalMinStatus != 'number' || analyses[i].status() < globalMinStatus) {
 			globalMinStatus = analyses[i].status();
 		}
 	}
 
+	//Trigger the event
 	VoiceAnalysis.notify('updatestatus', { status: globalMinStatus });
 };
