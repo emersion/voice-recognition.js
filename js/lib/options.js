@@ -58,14 +58,15 @@
 	Utils.Options.get = function getOption(name) {
 		var data = Utils.Options._data[name];
 
-		if (!data) {
+		if (!data) { //Non-existing/empty data
 			return;
 		}
 
-		if (typeof data.value != 'undefined') {
+		if (typeof data.value != 'undefined') { //If the option's value is defined
 			return data.value;
 		}
 
+		//Return the input's value
 		switch (data.type) {
 			case 'number':
 				return parseFloat(data.$input.val());

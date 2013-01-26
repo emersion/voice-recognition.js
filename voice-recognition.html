@@ -6,6 +6,8 @@
 
 	<!-- Bootstrap -->
 	<link href="css/bootstrap.min.css" rel="stylesheet" media="screen"/>
+
+	<link href="css/style.css" rel="stylesheet" media="screen"/>
 </head>
 <body>
 
@@ -40,9 +42,9 @@
 			</ul>
 			<div class="tab-content">
 				<div class="tab-pane active" id="input-microphone">
-					<div style="text-align:center;">
-						<button class="btn btn-primary btn-large" type="button" id="speak-start"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
-						<button class="btn btn-large btn-danger" style="display:none;" type="button" id="speak-stop" disabled="disabled"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
+					<div class="btn-speak-container">
+						<button class="btn btn-primary btn-large btn-speak" type="button" id="speak-start"><img src="img/speak-light.png"/></button>
+						<button class="btn btn-large btn-danger btn-speak" style="display:none;" type="button" id="speak-stop" disabled="disabled"><img src="img/speak-light.png"/></button>
 						<p id="speak-remaining-time"></p>
 					</div>
 				</div>
@@ -51,7 +53,7 @@
 						<div class="control-group">
 							<label class="control-label" for="audio-file-input">Input file</label>
 							<div class="controls">
-								<input type="file" id="audio-file-input"/>
+								<input type="file" id="audio-file-input" accept="audio/*;capture=microphone"/>
 							</div>
 						</div>
 						<div class="btn-group">
@@ -128,10 +130,8 @@
 		</div>
 	</div>
 
-	<div style="text-align: center;">
-		<audio id="audio-element"
-			controls="true"
-			style="width: 100%;">
+	<div class="fft-container">
+		<audio id="audio-element" controls="true"></audio>
 		</audio><br />
 		<canvas id="fft" height="200" class="img-polaroid"></canvas>
 	</div>

@@ -1,5 +1,5 @@
 /**
- * @fileOverview An implementation of the observer design pattern.
+ * @fileOverview An implementation of the observer design pattern, from the Symbiose project.
  * @author $imon
  */
 

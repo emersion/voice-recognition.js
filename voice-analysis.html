@@ -6,6 +6,8 @@
 
 	<!-- Bootstrap -->
 	<link href="css/bootstrap.min.css" rel="stylesheet" media="screen"/>
+
+	<link href="css/style.css" rel="stylesheet" media="screen"/>
 </head>
 <body>
 
@@ -62,9 +64,9 @@
 			</ul>
 			<div class="tab-content">
 				<div class="tab-pane active" id="input-microphone-0">
-					<div style="text-align:center;">
-						<button class="btn btn-primary btn-large" type="button" id="speak-start-0"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
-						<button class="btn btn-large btn-danger" type="button" id="speak-stop-0" style="display:none;" disabled="disabled"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
+					<div class="btn-speak-container">
+						<button class="btn btn-primary btn-large btn-speak" type="button" id="speak-start-0"><img src="img/speak-light.png"/></button>
+						<button class="btn btn-large btn-danger btn-speak" type="button" id="speak-stop-0" style="display:none;" disabled="disabled"><img src="img/speak-light.png"/></button>
 						<p id="speak-remaining-time-0"></p>
 					</div>
 				</div>
@@ -88,11 +90,8 @@
 				<button class="btn" type="button" id="export-data-json-0">Export data to JSON</button>
 				<button class="btn" type="button" id="export-data-model-0">Export as model</button>
 			</div>
-			<div style="text-align: center;">
-				<audio id="audio-element-0"
-					controls="true"
-					style="width: 100%;">
-				</audio>
+			<div class="fft-container">
+				<audio id="audio-element-0" controls="true"></audio>
 				<canvas id="fft-0" height="200" class="img-polaroid"></canvas>
 			</div>
 		</div>
@@ -105,9 +104,9 @@
 			</ul>
 			<div class="tab-content">
 				<div class="tab-pane" id="input-microphone-1">
-					<div style="text-align:center;">
-						<button class="btn btn-primary btn-large" type="button" id="speak-start-1"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
-						<button class="btn btn-large btn-danger" type="button" id="speak-stop-1" style="display:none;" disabled="disabled"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
+					<div class="btn-speak-container">
+						<button class="btn btn-primary btn-large btn-speak" type="button" id="speak-start-1"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
+						<button class="btn btn-large btn-danger btn-speak" type="button" id="speak-stop-1" style="display:none;" disabled="disabled"><img src="img/speak-light.png"/></button>
 						<p id="speak-remaining-time-1"></p>
 					</div>
 				</div>
@@ -132,11 +131,8 @@
 				<button class="btn" type="button" id="export-data-model-1">Export as model</button>
 			</div>
 
-			<div style="text-align: center;">
-				<audio id="audio-element-1"
-					controls="true"
-					style="width: 100%;">
-				</audio>
+			<div class="fft-container">
+				<audio id="audio-element-1" controls="true"></audio>
 				<canvas id="fft-1" height="200" class="img-polaroid"></canvas>
 			</div>
 		</div>

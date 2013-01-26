@@ -36,11 +36,12 @@
 		 * @return {Number}         The value.
 		 */
 		value: function value(value) {
-			if (typeof value == 'undefined') {
+			if (typeof value == 'undefined') { //Getter
 				return this._value;
-			} else {
+			} else { //Setter
 				value = parseInt(value);
 
+				//Bad arguments ?
 				if (isNaN(value)) {
 					value = 0;
 				}
@@ -53,6 +54,7 @@
 
 				this._value = value;
 
+				//Trigger the event
 				this.notify('update', { value: value, message: this.message(), error: this.error() });
 			}
 		},
@@ -62,11 +64,12 @@
 		 * @return {Number}       The number of parts.
 		 */
 		parts: function parts(value) {
-			if (typeof value == 'undefined') {
+			if (typeof value == 'undefined') { //Getter
 				return this._parts;
-			} else {
+			} else { //Setter
 				value = parseInt(value);
 
+				//Bad arguments ?
 				if (isNaN(value)) {
 					value = 1;
 				}
@@ -79,7 +82,7 @@
 		 * @param  {Number} [factor=1] The part's importance.
 		 */
 		partComplete: function partComplete(factor) {
-			factor = (typeof factor == 'number') ? factor : 1;
+			factor = (typeof factor == 'number') ? factor : 1; //Default factor = 1
 
 			var percentage = this.value() + 1 / this.parts() * 100 * factor;
 			this.value(percentage);
@@ -90,13 +93,14 @@
 		 * @return {String}     The message.
 		 */
 		message: function message(msg) {
-			if (typeof msg == 'undefined') {
+			if (typeof msg == 'undefined') { //Getter
 				return this._message;
-			} else {
+			} else { //Setter
 				msg = String(msg);
 
 				this._message = msg;
 
+				//Trigger the event
 				this.notify('update', { value: this.value(), message: msg, error: this.error() });
 			}
 		},
@@ -106,14 +110,14 @@
 		 * @return {Boolean}    True if the operation has failed.
 		 */
 		error: function error(msg) {
-			if (typeof msg == 'undefined') {
-				return this._error;
-			} else {
-				if (msg === false) {
+			if (typeof msg == 'undefined') { //Getter
+				return this._error; //Return the error's message
+			} else { //Setter
+				if (msg === false) { //Unmark this progress as failed (undo)
 					this._error = false;
 
 					this.notify('update', { value: this.value(), message: this.message(), error: false });
-				} else {
+				} else { //Mark the operation as failed
 					this._error = true;
 
 					this.message(msg);

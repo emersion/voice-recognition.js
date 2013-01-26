@@ -4,7 +4,7 @@
  */
 
 (function() {
-	if (window.Utils) { //Define utils' namespace
+	if (window.Utils) { //If the library is already loaded
 		return;
 	}
 
@@ -22,7 +22,7 @@
 	 * @function
 	 */
 	Utils.logMessage = function logMessage() {
-		if (Utils.Options.get('utils.logMessages')) {
+		if (Utils.Options.get('utils.logMessages')) { //If message logging is enabled
 			console.log.apply(window, Array.prototype.slice.call(arguments));
 		}
 	};
@@ -41,7 +41,7 @@
 	 * @param  {String} type     The MIME type of the data.
 	 */
 	Utils.Export.exportData = function exportData(contents, type) {
-		window.open('data:'+type+';base64,'+window.btoa(contents));
+		window.open('data:'+type+';base64,'+window.btoa(contents)); //Open a new window with encoded data in base64
 	};
 
 	/**
@@ -49,7 +49,8 @@
 	 * @param  {String} csv The CSV data.
 	 */
 	Utils.Export.exportCSV = function exportCSV(csv) {
-		return Utils.Export.exportData(csv.replace(/\./g,','), 'text/csv');
+		csv = csv.replace(/\./g,','); //Replace dots in numbers by commas (e.g. 6.54 -> 6,54)
+		return Utils.Export.exportData(csv, 'text/csv');
 	};
 
 	/**
@@ -57,7 +58,8 @@
 	 * @param  {Object} data The data.
 	 */
 	Utils.Export.exportJSON = function exportJSON(data) {
-		return Utils.Export.exportData(JSON.stringify(data, null, "\t"), 'application/json');
+		var json = JSON.stringify(data, null, "\t"); //Encode data in JSON
+		return Utils.Export.exportData(json, 'application/json');
 	};
 
 	window.Utils = Utils; //Export API
