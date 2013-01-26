@@ -309,21 +309,17 @@ $recognitionControls.speakStart.click(function() {
 		navigator.mozGetUserMedia ||
 		navigator.msGetUserMedia);
 
-	if (navigator.getMedia && (window.AudioContext || window.webkitAudioContext) && false) { //Not supported
+	if (navigator.getMedia && (window.AudioContext || window.webkitAudioContext) && false) { //Not implemented yet
 		navigator.getMedia({
 			video: false,
 			audio: true
 		}, function(stream) {
 			recording();
+			
+			var context = (window.webkitAudioContext) ? new window.webkitAudioContext() : new window.AudioContext();
+			var microphone = context.createMediaStreamSource(stream);
 
-			if (navigator.mozGetUserMedia) {
-				$recognitionControls.audio[0].mozSrcObject = stream;
-			} else {
-				var vendorURL = window.URL || window.webkitURL;
-				$recognitionControls.audio[0].src = vendorURL ? vendorURL.createObjectURL(stream) : stream;
-			}
-
-			$recognitionControls.audio[0].play();
+			microphone.connect(context.destination);
 		}, function(err) {
 			var msg;
 			if (err == 'NOT_SUPPORTED_ERROR') {
@@ -343,6 +339,7 @@ $recognitionControls.speakStart.click(function() {
 		Recorder.record({
 			start: function(channels, sampleRate, bufferLength) {
 				recording();
+
 				bufferLength = 512;
 				timeInterval = (1 / sampleRate) * bufferLength;
 				analysis.ready(channels, sampleRate, bufferLength);
