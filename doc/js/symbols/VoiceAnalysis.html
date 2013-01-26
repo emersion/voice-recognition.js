@@ -301,6 +301,15 @@ ul.inheritsList
 						<tr>
 							<td class="attributes">&nbsp;</td>
 							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#channels">channels</a></b>()
+								</div>
+								<div class="description">Get the number of channels of the audio stream.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
 								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#control">control</a></b>(name)
 								</div>
 								<div class="description">Get a control.</div>
@@ -322,6 +331,15 @@ ul.inheritsList
 								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#exportData">exportData</a></b>(format)
 								</div>
 								<div class="description">Export the audio data.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#frameBufferLength">frameBufferLength</a></b>()
+								</div>
+								<div class="description">Get the frame buffer length of the audio stream.</div>
 							</td>
 						</tr>
 					
@@ -364,9 +382,18 @@ ul.inheritsList
 						<tr>
 							<td class="attributes">&nbsp;</td>
 							<td class="nameDescription">
-								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#name">name</a></b>()
+								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#length">length</a></b>()
 								</div>
-								<div class="description">Get this analysis' name.</div>
+								<div class="description">Get the number of magnitudes retrieved.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#name">name</a></b>(name)
+								</div>
+								<div class="description">Get/set this analysis' name.</div>
 							</td>
 						</tr>
 					
@@ -403,6 +430,15 @@ ul.inheritsList
 								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#reset">reset</a></b>()
 								</div>
 								<div class="description">Reset this analysis.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/VoiceAnalysis.html#sampleRate">sampleRate</a></b>()
+								</div>
+								<div class="description">Get the sample rate of the audio stream.</div>
 							</td>
 						</tr>
 					
@@ -577,6 +613,38 @@ ul.inheritsList
 
 					<hr />
 				
+					<a name="channels"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{Number}</span>
+					<b>channels</b>()
+					
+					</div>
+					<div class="description">
+						Get the number of channels of the audio stream.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{Number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
 					<a name="control"> </a>
 					<div class="fixedFont">
 					
@@ -675,6 +743,38 @@ ul.inheritsList
 						
 						
 						
+						
+						
+						
+
+					<hr />
+				
+					<a name="frameBufferLength"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{Number}</span>
+					<b>frameBufferLength</b>()
+					
+					</div>
+					<div class="description">
+						Get the frame buffer length of the audio stream.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{Number}</span> </dd>
+							
+							</dl>
 						
 						
 						
@@ -813,21 +913,64 @@ ul.inheritsList
 
 					<hr />
 				
+					<a name="length"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{Number}</span>
+					<b>length</b>()
+					
+					</div>
+					<div class="description">
+						Get the number of magnitudes retrieved.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{Number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
 					<a name="name"> </a>
 					<div class="fixedFont">
 					
 					<span class="light">{String}</span>
-					<b>name</b>()
+					<b>name</b>(name)
 					
 					</div>
 					<div class="description">
-						Get this analysis' name.
+						Get/set this analysis' name.
 						
 						
 					</div>
 					
 					
 					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{String}</span> <b>name</b>
+									<i>Optional</i>
+								</dt>
+								<dd>If specified, the new analysis' name.</dd>
+							
+							</dl>
 						
 						
 						
@@ -922,22 +1065,22 @@ ul.inheritsList
 							<dt class="heading">Parameters:</dt>
 							
 								<dt>
-									<b>channels</b>
+									<span class="light fixedFont">{Number}</span> <b>channels</b>
 									
 								</dt>
-								<dd></dd>
+								<dd>The number of channels in the audio data.</dd>
 							
 								<dt>
-									<b>sampleRate</b>
+									<span class="light fixedFont">{Number}</span> <b>sampleRate</b>
 									
 								</dt>
-								<dd></dd>
+								<dd>The audio sample rate (e.g. 44100 Hz).</dd>
 							
 								<dt>
-									<b>frameBufferLength</b>
+									<span class="light fixedFont">{Number}</span> <b>frameBufferLength</b>
 									
 								</dt>
-								<dd></dd>
+								<dd>The frame buffer length</dd>
 							
 							</dl>
 						
@@ -969,6 +1112,38 @@ ul.inheritsList
 						
 						
 						
+						
+						
+						
+
+					<hr />
+				
+					<a name="sampleRate"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{Number}</span>
+					<b>sampleRate</b>()
+					
+					</div>
+					<div class="description">
+						Get the sample rate of the audio stream.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{Number}</span> </dd>
+							
+							</dl>
 						
 						
 						
@@ -1087,7 +1262,7 @@ ul.inheritsList
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Mon Jan 21 2013 08:52:40 GMT+0100 (CET)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sat Jan 26 2013 09:22:05 GMT+0100 (CET)
 		</div>
 	</body>
 </html>
