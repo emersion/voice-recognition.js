@@ -79,17 +79,31 @@
 			<h1>Docs <small>(in French)</small></h1>
 			<div class="alert alert-block">
 				<h4>Attention !</h4>
-				Cette documentation n'a pas encore &eacute;t&eacute; r&eacute;alis&eacute;e : elle est encore en cours de r&eacute;daction.
+				Cette documentation est encore en cours de r&eacute;daction.
 			</div>
-			<h2 id="docs-principle">Principe</h2>
-			<h2 id="docs-general-functioning">Fonctionnement g&eacute;n&eacute;ral</h2>
-			<h2 id="docs-signal-processing">Traitement du signal</h2>
-			<h2 id="docs-fft-processing">Traitement de la FFT</h2>
-			<h2 id="docs-audio-comparison">Comparaison entre deux pistes audio</h2>
-			<h3 id="docs-data-preparing">Pr&eacute;paration des donn&eacute;es</h3>
-			<h3 id="docs-data-shifting">D&eacute;calage des courbes</h3>
-			<h3 id="docs-comparing">Comparaison des courbes</h3>
-			<h2 id="docs-voice-recognition">Reconnaissance vocale</h2>
+			<h2 id="docs-principle">1. Principe</h2>
+			<p>Le principe sur lequel repose l'algorithme de reconnaissance vocale est simple : la contruction de <abbr title="Discrete Fourier Transform">DFT</abbr> (transform&eacute;e de Fourier discr&egrave;te, par l'aglorithme <abbr title="Fast Fourier Transform">FFT</abbr>) &agrave; partir des enregistrements vocaux et la comparaison de ces donn&eacute;es pour d&eacute;terminer lesquelles sont les plus similaires.</p>
+			<h2 id="docs-general-functioning">2. Fonctionnement g&eacute;n&eacute;ral</h2>
+			<p></p>
+			<h2 id="docs-signal-processing">3. Traitement du signal</h2>
+			<p>Les API HTML5 de Mozilla (en particulier <a href="https://developer.mozilla.org/en-US/docs/Introducing_the_Audio_API_Extension">Audio Data API</a>) nous permettent de r&eacute;cup&eacute;rer les donn&eacute;es brutes du signal audio provenant d'un fichier.</p>
+			<p>Dans le cas d'un enregistrement vocal provenant du microphone, la sp&eacute;cification est encore obscure et il n'existe aucune impl&eacute;mentation pour le moment. Nous devons donc recourir &agrave; une petite biblioth&egrave;que Flash pour acc&eacute;der aux donn&eacute;es brutes. Ce programme s'appelle <a href="https://github.com/jwagener/recorder.js">recorder.js</a>, il a &eacute;t&eacute; modifi&eacute; pour permettre l'acc&egrave;s aux donn&eacute;es en temps r&eacute;el et non apr&egrave;s l'enregistrement pour plus de rapidit&eacute; et une visualisation du signal en direct (cf. <a href="https://github.com/simonser/recorder.js">le <em>fork</em> sur Github</a>).</p>
+			<p>Une fois les donn&eacute;es du signal r&eacute;cup&eacute;r&eacute;es, il nous faut dessiner une <abbr title="Discrete Fourier Transform">DFT</abbr>. On utilisera alors la classe <em>FFT</em> issue de <a href="https://github.com/corbanbrook/dsp.js"><abbr title="Digital Signal Processing">dsp</abbr>.js</a>. Une <a href="https://fr.wikipedia.org/wiki/Transform%C3%A9e_de_Fourier_discr%C3%A8te">DFT</a> est une d&eacute;composition fr&eacute;quencielle du signal sonore et permet de l'exploiter.</p>
+			<img src="https://upload.wikimedia.org/wikipedia/commons/5/58/TFD.JPG" alt="Exemple Transformée de Fourier Discrete"/>
+			<p>&Agrave; intervale de temps r&eacute;gulier, on cr&eacute;e une FFT du signal. Apr&egrave;s le traitement, on a donc une collection de FFT.</p>
+			<h2 id="docs-fft-processing">4. Traitement de la FFT</h2>
+			<p>Une fois la collection de FFT obtenue, on va normaliser ces FFT sur l'axe des fr&eacute;quences.</p>
+			<p>Il nous faut maintenant d&eacute;terminer le d&eacute;but et la fin du mot prononc&eacute;. Pour cela, </p>
+			<h2 id="docs-audio-comparison">5. Comparaison entre deux pistes audio</h2>
+			<p></p>
+			<h3 id="docs-data-preparing">a) Pr&eacute;paration des donn&eacute;es</h3>
+			<p></p>
+			<h3 id="docs-data-shifting">b) D&eacute;calage des courbes</h3>
+			<p></p>
+			<h3 id="docs-comparing">c) Comparaison des courbes</h3>
+			<p></p>
+			<h2 id="docs-voice-recognition">6. Reconnaissance vocale</h2>
+			<p></p>
 		</div>
 	</div>
 </div>
