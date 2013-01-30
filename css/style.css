@@ -1,3 +1,7 @@
+.docs .btn.pull-right + p {
+	margin-right: 80px;
+}
+
 .tab-content {
     overflow: visible;
 }

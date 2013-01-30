@@ -75,7 +75,7 @@
 				</ul>
 			</div>
 		</div>
-		<div class="span9">
+		<div class="span9 docs">
 			<h1>Docs <small>(in French)</small></h1>
 			<div class="alert alert-block">
 				<h4>Attention !</h4>
@@ -88,27 +88,47 @@
 			<h2 id="docs-signal-processing">3. Traitement du signal</h2>
 			<p>Les API HTML5 de Mozilla (en particulier <a href="https://developer.mozilla.org/en-US/docs/Introducing_the_Audio_API_Extension">Audio Data API</a>) nous permettent de r&eacute;cup&eacute;rer les donn&eacute;es brutes du signal audio provenant d'un fichier.</p>
 			<p>Dans le cas d'un enregistrement vocal provenant du microphone, la sp&eacute;cification est encore obscure et il n'existe aucune impl&eacute;mentation pour le moment. Nous devons donc recourir &agrave; une petite biblioth&egrave;que Flash pour acc&eacute;der aux donn&eacute;es brutes. Ce programme s'appelle <a href="https://github.com/jwagener/recorder.js">recorder.js</a>, il a &eacute;t&eacute; modifi&eacute; pour permettre l'acc&egrave;s aux donn&eacute;es en temps r&eacute;el et non apr&egrave;s l'enregistrement pour plus de rapidit&eacute; et une visualisation du signal en direct (cf. <a href="https://github.com/simonser/recorder.js">le <em>fork</em> sur Github</a>).</p>
+			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-analysis.js', 1, 112);">Voir le code</button>
 			<p>Une fois les donn&eacute;es du signal r&eacute;cup&eacute;r&eacute;es, il nous faut dessiner une <abbr title="Discrete Fourier Transform">DFT</abbr>. On utilisera alors la classe <em>FFT</em> issue de <a href="https://github.com/corbanbrook/dsp.js"><abbr title="Digital Signal Processing">dsp</abbr>.js</a>. Une <a href="https://fr.wikipedia.org/wiki/Transform%C3%A9e_de_Fourier_discr%C3%A8te">DFT</a> est une d&eacute;composition fr&eacute;quencielle du signal sonore et permet de l'exploiter.</p>
-			<img src="https://upload.wikimedia.org/wikipedia/commons/5/58/TFD.JPG" alt="Exemple Transformée de Fourier Discrete"/>
+			<ul class="thumbnails">
+				<li class="span12">
+					<div class="thumbnail">
+						<img src="https://upload.wikimedia.org/wikipedia/commons/5/58/TFD.JPG" alt="Exemple Transformée de Fourier Discrete"/>
+					</div><!-- /.thumbnail -->
+				</li>
+			</ul>
 			<p>&Agrave; intervale de temps r&eacute;gulier, on cr&eacute;e une FFT du signal. Apr&egrave;s le traitement, on a donc une collection de FFT.</p>
 			<h2 id="docs-fft-processing">4. Traitement de la FFT</h2>
-			<p>Une fois la collection de FFT obtenue, on va normaliser ces FFT sur l'axe des fr&eacute;quences.</p>
-			<p>Il nous faut maintenant d&eacute;terminer le d&eacute;but et la fin du mot prononc&eacute;. Pour cela, </p>
+			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-analysis.js', 468, 484);">Voir le code</button>
+			<p>Une fois la collection de FFT obtenue, on va normaliser ces FFT sur l'axe des fr&eacute;quences. Cela va permettre de pouvoir comparer les FFT entre elles m&eacute;me si le niveau sonore est diff&eacute;rent, par exemple si l'utilisateur a parl&eacute; plus proche du micro ou plus fort.</p>
+			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-analysis.js', 486, 539);">Voir le code</button>
+			<p>Il nous faut maintenant d&eacute;terminer le d&eacute;but et la fin du mot prononc&eacute;. Pour cela, nous allons d&eacute;finir un seuil &agrave; partir duquel on consid&eacute;rera que le mot commence ou finit d'&ecirc;tre prononc&eacute;.</p>
+			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-analysis.js', 541, 561);">Voir le code</button>
+			<p>Ensuite, une normalisation de l'axe du temps est effectu&eacute;e. 0% va donc correspondre au d&eacute;but du mot et 100% &agrave; sa fin.</p>
 			<h2 id="docs-audio-comparison">5. Comparaison entre deux pistes audio</h2>
-			<p></p>
+			<p>Une fois ces traitements effectu&eacute;s, il est alors possible de comparer les donn&eacute;es obtenues.</p>
 			<h3 id="docs-data-preparing">a) Pr&eacute;paration des donn&eacute;es</h3>
-			<p></p>
-			<h3 id="docs-data-shifting">b) D&eacute;calage des courbes</h3>
-			<p></p>
+			<p>Nos donn&eacute;es sont sous la forme de deux collections de FFT, chacune faisant correspondre un temps donn&eacute; et une FFT. Le probl&egrave;me est que les FFT n'ont pas for&eacute;ment &eacute;t&eacute; construites &agrave; un temps identique : par exemple, un enregistrement de 1,4 s. et un autre de 1,6 s. n'ont pas le m&ecirc;me nombre de FFT construites. Le but sera donc de transformer les donn&eacute;es de fa&ccedil;on &agrave; faire correspondre un temps donn&eacute; avec deux FFT.</p>
+			<p>[Schema]</p>
+			<p>L'algorithme va prendre la collection de FFT la plus importante et y ajouter les donn&eacute;es de l'autre. [Description du schema]</p>
+			<h3 id="docs-data-shifting">b) D&eacute;calage des courbes <span class="label label-warning">Fonctionne mal</span></h3>
+			<div class="alert alert-block">
+				<h4>Attention !</h4>
+				Cette fonctionnalit&eacute; ne marche pas comme attendu. Elle est optionnelle et ses r&eacute;sultats n'ont pas encore &eacute;t&eacute; &eacute;tudi&eacute;s. Ne l'utilisez donc pas !
+			</div>
+			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-comparison.js', 213, 322);">Voir le code</button>
+			<p>Un algorithme va se charger de d&eacute;caler les courbes des FFT pour qu'elles correspondent au mieux.</p>
 			<h3 id="docs-comparing">c) Comparaison des courbes</h3>
-			<p></p>
+			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-comparison.js', 333, 389);">Voir le code</button>
+			<p>Ensuite, nous allons comparer les deux courbes de chaque couple de FFT. Un indicateur de correspondance sera d&eacute;termin&eacute; pour chaque point de la courbe (donc pour chaque fr&eacute;quence), une moyenne en sera faite au niveau de la FFT puis de la collection de FFT.</p>
 			<h2 id="docs-voice-recognition">6. Reconnaissance vocale</h2>
-			<p></p>
+			<p>Il est alors simple de d&eacute;terminer quel mod&egrave;le correspond au mieux au mot prononc&eacute; : celui dont la correspondance avec le signal audio est la plus importante.</p>
 		</div>
 	</div>
 </div>
 
 <script src="http://code.jquery.com/jquery-latest.js"></script>
 <script src="js/lib/bootstrap.min.js"></script>
+<script src="js/pages/index.js"></script>
 </body>
 </html>
