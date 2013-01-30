@@ -81,8 +81,10 @@
 				<h4>Attention !</h4>
 				Cette documentation est encore en cours de r&eacute;daction.
 			</div>
+
 			<h2 id="docs-principle">1. Principe</h2>
 			<p>Le principe sur lequel repose l'algorithme de reconnaissance vocale est simple : la construction de <abbr title="Discrete Fourier Transform">DFT</abbr> (transform&eacute;e de Fourier discr&egrave;te, par l'aglorithme <abbr title="Fast Fourier Transform">FFT</abbr>) &agrave; partir des enregistrements vocaux et la comparaison de ces donn&eacute;es pour d&eacute;terminer lesquelles sont les plus similaires.</p>
+
 			<h2 id="docs-general-functioning">2. Fonctionnement g&eacute;n&eacute;ral</h2>
 			<p>Le signal audio prononc&eacute; va &ecirc;tre compar&eacute; &agrave; des mod&egrave;les pr&eacute;-enregistr&eacute;s contenus dans une base de donn&eacute;es.</p>
 			<ul class="thumbnails">
@@ -92,6 +94,42 @@
 					</div><!-- /.thumbnail -->
 				</li><!-- /.span12 -->
 			</ul><!-- /.thumbnails -->
+			<p>Les mod&egrave;les sont stock&eacute;s sous le format JSON et respectent cette syntaxe :</p>
+			<pre><code>[ //Tableau contenant les diff&eacute;rents mod&egrave;les
+	{ //Premier groupe de mod&egrave;les
+		"name": "avance", //Nom du groupe
+		"models": [ //Mod&egrave;les appartenant au groupe
+			{ //Premier mod&egrave;le
+				"name": "avance", //Nom du mod&egrave;le
+				"gender": "m", //Sexe du locuteur ("m" pour masculin, "f" pour f&eacute;minin)
+				"speaker": "simon", //Nom du locuteur
+				"micro": "simon-samsung-shs-200v", //Nom du micro avec lequel l'enregistrement a &eacute;t&eacute; effectu&eacute;
+				"data": { //Donn&eacute;es du mod&egrave;le
+					"magnitude": [...], //Magnitudes
+					"time": [...], //Temps
+					"frequencies": [...] //Fr&eacute;quences enregistr&eacute;es
+				}
+			}
+		]
+	},
+	{ //Deuxi&egrave;me groupe de mod&egrave;les
+		"name": "recule",
+		"models": [
+			{
+				"name": "recule",
+				"gender": "m",
+				"speaker": "simon",
+				"micro": "simon-samsung-shs-200v",
+				"data": {
+					"magnitude": [...],
+					"time": [...],
+					"frequencies": [...]
+				}
+			}
+		]
+	}
+]</code></pre>
+
 			<h2 id="docs-signal-processing">3. Traitement du signal</h2>
 			<p>Les API HTML5 de Mozilla (en particulier <a href="https://developer.mozilla.org/en-US/docs/Introducing_the_Audio_API_Extension">Audio Data API</a>) nous permettent de r&eacute;cup&eacute;rer les donn&eacute;es brutes du signal audio provenant d'un fichier.</p>
 			<p>Dans le cas d'un enregistrement vocal provenant du microphone, la sp&eacute;cification est encore obscure et il n'existe aucune impl&eacute;mentation pour le moment. Nous devons donc recourir &agrave; une petite biblioth&egrave;que Flash pour acc&eacute;der aux donn&eacute;es brutes. Ce programme s'appelle <a href="https://github.com/jwagener/recorder.js">recorder.js</a>, il a &eacute;t&eacute; modifi&eacute; pour permettre l'acc&egrave;s aux donn&eacute;es en temps r&eacute;el et non apr&egrave;s l'enregistrement pour plus de rapidit&eacute; et une visualisation du signal en direct (cf. <a href="https://github.com/simonser/recorder.js">le <em>fork</em> sur Github</a>).</p>
@@ -112,6 +150,7 @@
 					</div><!-- /.thumbnail -->
 				</li><!-- /.span12 -->
 			</ul><!-- /.thumbnails -->
+
 			<h2 id="docs-fft-processing">4. Traitement de la FFT</h2>
 			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-analysis.js', 468, 484);">Voir le code</button>
 			<p>Une fois la collection de FFT obtenue, on va normaliser ces FFT sur l'axe des magnitudes. Cela va permettre de pouvoir comparer les FFT entre elles m&ecirc;me si le niveau sonore est diff&eacute;rent, par exemple si l'utilisateur a parl&eacute; plus proche du micro ou plus fort.</p>
@@ -140,8 +179,10 @@
 					</div><!-- /.thumbnail -->
 				</li><!-- /.span12 -->
 			</ul><!-- /.thumbnails -->
+
 			<h2 id="docs-audio-comparison">5. Comparaison entre deux pistes audio</h2>
 			<p>Une fois ces traitements effectu&eacute;s, il est alors possible de comparer les donn&eacute;es obtenues.</p>
+
 			<h3 id="docs-data-preparing">a) Pr&eacute;paration des donn&eacute;es</h3>
 			<p>Nos donn&eacute;es sont sous la forme de deux collections de FFT, chacune faisant correspondre un temps donn&eacute; et une FFT. Le probl&egrave;me est que les FFT n'ont pas for&eacute;ment &eacute;t&eacute; construites &agrave; un temps identique : par exemple, un enregistrement de 1,4 s. et un autre de 1,6 s. n'ont pas le m&ecirc;me nombre de FFT construites. Le but sera donc de transformer les donn&eacute;es de fa&ccedil;on &agrave; faire correspondre un temps donn&eacute; avec deux FFT.</p>
 			<ul class="thumbnails">
@@ -152,6 +193,7 @@
 				</li><!-- /.span12 -->
 			</ul><!-- /.thumbnails -->
 			<p>L'algorithme va prendre la collection de FFT la plus importante et y ajouter les donn&eacute;es de l'autre.</p>
+
 			<h3 id="docs-data-shifting">b) D&eacute;calage des courbes <span class="label label-warning">Fonctionne mal</span></h3>
 			<div class="alert alert-block">
 				<h4>Attention !</h4>
@@ -159,6 +201,7 @@
 			</div>
 			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-comparison.js', 213, 322);">Voir le code</button>
 			<p>Un algorithme va se charger de d&eacute;caler les courbes des FFT pour qu'elles correspondent au mieux.</p>
+
 			<h3 id="docs-comparing">c) Comparaison des courbes</h3>
 			<button class="btn btn-mini btn-info pull-right" type="button" onclick="Docs.browseCode('/js/lib/voice-comparison.js', 333, 389);">Voir le code</button>
 			<p>Ensuite, nous allons comparer les deux courbes de chaque couple de FFT. Un indicateur de correspondance sera d&eacute;termin&eacute; pour chaque point de la courbe (donc pour chaque fr&eacute;quence), une moyenne en sera faite au niveau de la FFT puis de la collection de FFT.</p>
@@ -170,6 +213,7 @@
 				</li><!-- /.span12 -->
 			</ul><!-- /.thumbnails -->
 			<p>Notons que les premi&egrave;res fr&eacute;quences &eacute;tant tr&egrave;s d&eacute;pendantes du bruit de fond donc assez al&eacute;atoires, nous les excluons de la comparaison.</p>
+
 			<h2 id="docs-voice-recognition">6. Reconnaissance vocale</h2>
 			<p>Il est alors simple de d&eacute;terminer quel mod&egrave;le correspond au mieux au mot prononc&eacute; : celui dont la correspondance avec le signal audio est la plus importante.</p>
 			<ul class="thumbnails">
