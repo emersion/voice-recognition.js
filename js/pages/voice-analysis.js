@@ -228,8 +228,8 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			clearInterval(remainingTimeInterval);
 			$controls.speakRemainingTime.empty();
 
-			//$controls.speakStop.prop('disabled', true).hide().css('box-shadow', 'none');
-			//$controls.speakStart.prop('disabled', false).show();
+			$controls.speakStop.prop('disabled', true).hide().css('box-shadow', 'none');
+			$controls.speakStart.prop('disabled', false).show();
 
 			Recorder.stop();
 
