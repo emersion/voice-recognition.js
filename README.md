@@ -1,5 +1,5 @@
-voice-recognition.js
-====================
+[voice-recognition.js](http://emersion.fr/projects/voice-recognition.js)
+========================================================================
 
 A Javascript library for low-level voice recognition.
 
@@ -23,12 +23,12 @@ Pour l'instant, l'application n'est fonctionnelle que sur **Firefox**, car elle 
 RTFM ?
 ------
 
-Des documents expliquant le principe de fonctionnement du programme seront réalisés bientôt !
+Des documents expliquant le principe de fonctionnement du programme sont disponibles dans le code source du projet. Vous pouvez les consulter en ligne sur le site web.
 
 Author
 ------
 
-**$imon** - http://simonser.fr.nf/
+**$imon** - http://emersion.fr
 
 Copyright
 ---------
