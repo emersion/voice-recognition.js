@@ -1,0 +1,29 @@
+{
+  "name": "voice-recognition.js",
+  "version": "1.0.0",
+  "homepage": "https://github.com/emersion/voice-recognition.js",
+  "authors": [
+    "Emersion <contact@emersion.fr>"
+  ],
+  "description": "A Javascript library for low-level voice recognition.",
+  "keywords": [
+    "voice",
+    "recognition",
+    "js",
+    "low",
+    "level"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "q": "~2.0.0",
+    "jquery": "~2.1.1",
+    "bootstrap": "2"
+  }
+}

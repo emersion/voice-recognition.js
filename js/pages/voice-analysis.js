@@ -191,7 +191,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 
 					recording = true;
 
-					bufferLength = 512;
+					bufferLength = bufferLength || 512;
 					analysis.ready(channels, sampleRate, bufferLength);
 					frameBuffer = new Float32Array(bufferLength);
 					timeInterval = (1 / sampleRate) * bufferLength;
@@ -202,20 +202,8 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 				progress: function(t, activityLevel) {
 					$controls.speakStop.css('box-shadow', '0px 0px '+(activityLevel / 100) * 50+'px #BD362F');
 				},
-				audioAvailable: function(data, t) {
-					data = data.split(';');
-
-					var processedSamples = 0;
-					while (processedSamples + frameBuffer.length < data.length) {
-						for (i = 0; i < frameBuffer.length; i++) {
-							frameBuffer[i] = data[processedSamples + i] || 0;
-						}
-
-						analysis.audioAvailable(frameBuffer, (processedBuffers + 1) * timeInterval);
-
-						processedSamples += frameBuffer.length;
-						processedBuffers++;
-					}
+				audioAvailable: function(buffer, t) {
+					analysis.audioAvailable(buffer, t);
 				}
 			});
 		});

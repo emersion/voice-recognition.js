@@ -23,7 +23,7 @@
 	 */
 	Utils.logMessage = function logMessage() {
 		if (Utils.Options.get('utils.logMessages')) { //If message logging is enabled
-			console.log.apply(window, Array.prototype.slice.call(arguments));
+			console.log.apply(console, Array.prototype.slice.call(arguments));
 		}
 	};
 

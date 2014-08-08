@@ -413,14 +413,14 @@ VoiceAnalysis.prototype = {
 		maxMagnitudeFreq;
 
 		for (var i = 0; i < this._fft.spectrum.length; i++ ) { //For each frequency
-			var isMagnitudeSaved = ($.inArray(i, analysisFreq) != -1); //Is this magnitude saved ?
+			var isMagnitudeSaved = ~analysisFreq.indexOf(i); //Is this magnitude saved ?
 
 			if (!showFFT && !isMagnitudeSaved) { //If we don't show the FFT or we don't save this magnitude value
 				continue; //Ignore this magnitude
 			}
 
 			//Multiply spectrum by a zoom value
-			magnitude = this._fft.spectrum[i] * 4000;
+			magnitude = this._fft.spectrum[i] * canvas.height / 2; // * 4000;
 
 			if (showFFT) {
 				//Draw rectangle bars for each frequency bin
