@@ -55,20 +55,28 @@ if (AudioContext) {
 
 				var waveNode = audioContext.createScriptProcessor(512, 1, 1);
 				waveNode.addEventListener('audioprocess', function (e) {
+					if (!currentStream) { // The recording has been stopped
+						return;
+					}
+
 					var t = (new Date).getTime() - startTime;
 
-					var data = new Uint8Array(analyser.frequencyBinCount); //analyser.frequencyBinCount
-					//analyser.getByteFrequencyData(data);
-					analyser.getByteTimeDomainData(data);
-
-					options.audioAvailable(data, t);
+					if (options.fftAvailable) {
+						var data = new Uint8Array(analyser.frequencyBinCount);
+						analyser.getByteFrequencyData(data);
+						options.fftAvailable(data, t);
+					} else {
+						var data = new Uint8Array(analyser.frequencyBinCount);
+						analyser.getByteTimeDomainData(data);
+						options.audioAvailable(data, t);
+					}
 				});
 
 				// Connect it to the destination to hear yourself (or any other node for processing!)
-				//mediaStreamSource.connect(audioContext.destination);
 				mediaStreamSource.connect(gainNode);
 				gainNode.connect(waveNode);
 				gainNode.connect(analyser);
+				//gainNode.connect(audioContext.destination);
 
 				options.start(2, audioContext.sampleRate, 512);
 			});
@@ -76,6 +84,7 @@ if (AudioContext) {
 		stop: function () {
 			if (currentStream) {
 				currentStream.stop();
+				currentStream = null;
 			}
 		}
 	};

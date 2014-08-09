@@ -136,6 +136,7 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			speakStop: $('#speak-stop-' + i),
 			speakRemainingTime: $('#speak-remaining-time-' + i),
 			audio: $('#audio-element-' + i),
+			timeInput: $('#audio-time-' + i),
 			canvas: $('#fft-' + i),
 			title: $('#audio-file-name-' + i),
 			editTitle: $('#audio-file-name-edit-' + i),
@@ -204,6 +205,9 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 				},
 				audioAvailable: function(buffer, t) {
 					analysis.audioAvailable(buffer, t);
+				},
+				fftAvailable: function (fft, t) {
+					analysis.fftAvailable(fft, t);
 				}
 			});
 		});

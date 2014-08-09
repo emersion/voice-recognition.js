@@ -22,6 +22,10 @@
 .fft-container {
 	text-align: center;
 }
+.fft-container input[type="range"] {
+	display: block;
+	width: 100%;
+}
 .fft-container audio {
 	width: 100%;
 }

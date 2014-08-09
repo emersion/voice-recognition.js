@@ -116,7 +116,7 @@ FFT.prototype.forward = function forward(buffer) {
  * @constructor
  * @param {Object} options Some options such as id and controls.
  */
-var VoiceAnalysis = function VoiceAnalysis(options) {
+var VoiceAnalysis = function (options) {
 	Utils.Observable.call(this); //Inheritance from Observable.
 
 	//Define object's properties
@@ -131,7 +131,7 @@ VoiceAnalysis.prototype = {
 	 * Get this analysis' id.
 	 * @return {Number}
 	 */
-	id: function getId() {
+	id: function () {
 		return this._id;
 	},
 	/**
@@ -139,7 +139,7 @@ VoiceAnalysis.prototype = {
 	 * @param  {String} [name] If specified, the new analysis' name.
 	 * @return {String}
 	 */
-	name: function name(name) {
+	name: function (name) {
 		if (typeof name == 'undefined') { //Getter
 			return this._name;
 		} else { //Setter
@@ -156,56 +156,56 @@ VoiceAnalysis.prototype = {
 	 * @param  {String} name The control's name.
 	 * @return {jQuery}
 	 */
-	control: function getControl(name) {
+	control: function (name) {
 		return this._$controls[name];
 	},
 	/**
 	 * Get this analysis' status.
 	 * @return {Number}
 	 */
-	status: function getStatus() {
+	status: function () {
 		return this._status;
 	},
 	/**
 	 * Get the number of channels of the audio stream.
 	 * @return {Number}
 	 */
-	channels: function getChannelsNbr() {
+	channels: function () {
 		return this._channels;
 	},
 	/**
 	 * Get the sample rate of the audio stream.
 	 * @return {Number}
 	 */
-	sampleRate: function getSampleRate() {
+	sampleRate: function () {
 		return this._rate;
 	},
 	/**
 	 * Get the frame buffer length of the audio stream.
 	 * @return {Number}
 	 */
-	frameBufferLength: function getFrameBufferLength() {
+	frameBufferLength: function () {
 		return this._frameBufferLength;
 	},
 	/**
 	 * Get the number of magnitudes retrieved.
 	 * @return {Number}
 	 */
-	length: function getLength() {
+	length: function () {
 		return this._magnitudes.length;
 	},
 	/**
 	 * Get the analysis' range (when does the speaker speak).
 	 * @return {Number[]} An array containing two indexes : the begining & the end.
 	 */
-	range: function getRange() {
+	range: function () {
 		return this._range || [];
 	},
 	/**
 	 * Get this analysis' standardized data.
 	 * @return {Object}
 	 */
-	standardizedData: function getStandardizedData() {
+	standardizedData: function () {
 		return {
 			magnitude: this._standardizedMagnitudes, //Magnitudes
 			time: this._standardizedTime //Time
@@ -216,7 +216,7 @@ VoiceAnalysis.prototype = {
 	 * @param  {Number|Number[]} freq Frequencies.
 	 * @return {Number[]|null}        Frequencies on which this analysis is made.
 	 */
-	frequencies: function frequencies(freq) {
+	frequencies: function (freq) {
 		if (typeof freq == 'undefined') { //Getter
 			return this._frequencies;
 		} else { //Setter
@@ -264,7 +264,7 @@ VoiceAnalysis.prototype = {
 	 * @param  {Number} [status] The new status.
 	 * @private
 	 */
-	_updateStatus: function _updateStatus(status) {
+	_updateStatus: function (status) {
 		status = (typeof status == 'number') ? status : this._status;
 		this._status = status;
 
@@ -275,7 +275,7 @@ VoiceAnalysis.prototype = {
 	/**
 	 * Initialize the analysis.
 	 */
-	init: function init() {
+	init: function () {
 		var that = this;
 
 		this.control('audio')
@@ -301,13 +301,19 @@ VoiceAnalysis.prototype = {
 				that.ended();
 			});
 
+		this.control('timeInput').on('input', function () {
+			var timePercent = Number($(this).val());
+
+			that.drawFftAt(timePercent);
+		});
+
 		this._updateStatus();
 	},
 	/**
 	 * Set this analysis' input file.
 	 * @param {File} file The file.
 	 */
-	setInputFile: function setInputFile(file) {
+	setInputFile: function (file) {
 		if (!file) { //If no file is specified
 			return;
 		}
@@ -331,7 +337,7 @@ VoiceAnalysis.prototype = {
 	 * @param {Number} sampleRate        The audio sample rate (e.g. 44100 Hz).
 	 * @param {Number} frameBufferLength The frame buffer length
 	 */
-	ready: function ready(channels, sampleRate, frameBufferLength) {
+	ready: function (channels, sampleRate, frameBufferLength) {
 		this._channels = channels;
 		this._rate = sampleRate;
 		this._frameBufferLength = frameBufferLength;
@@ -354,7 +360,7 @@ VoiceAnalysis.prototype = {
 	/**
 	 * Reset this analysis.
 	 */
-	reset: function reset() {
+	reset: function () {
 		this._maxMagnitude = 0; //The analysis' max. magnitude value
 		this._maxMagnitudeFreq = null; //The analysis' max. magnitude frequency
 
@@ -371,7 +377,7 @@ VoiceAnalysis.prototype = {
 	 * @param  {Float32Array} fb The audio data (frame buffer).
 	 * @param  {Number} t  The audio time.
 	 */
-	audioAvailable: function audioAvailable(fb, t) {
+	audioAvailable: function (fb, t) {
 		if (this.status() < 1) { //If it's a new analysis, reset this one
 			this.reset();
 		}
@@ -394,53 +400,60 @@ VoiceAnalysis.prototype = {
 
 		this._fft.forward(signal); //Forward the signal
 
+		this.fftAvailable(this._fft.spectrum);
+	},
+	/**
+	 * Method to call when FFT data is available.
+	 * @param  {Float32Array} fft The FFT data.
+	 * @param  {Number} t  The audio time.
+	 */
+	fftAvailable: function (fft, t) {
+		if (this.status() < 1) { //If it's a new analysis, reset this one
+			this.reset();
+		}
+
+		if (this._startTime === null) { //If it's the first one this method is called, register actual time as start time
+			this._startTime = new Date().getTime() / 1000;
+		}
+		if (typeof t != 'number') { //If no time is specified, let's deduce it from the start time
+			t = (new Date).getTime() / 1000 - this._startTime;
+		}
+
 		//Variables for canvas drawing
 		var showFFT = Utils.Options.get('voice.comparing.showFFT'), // Do we have to draw the FFT on the canvas ?
 		canvas = this.control('canvas')[0],
 		ctx = canvas.getContext('2d');
-
-		if (showFFT) { //If FFT is shown, clear the canvas
-			ctx.clearRect(0,0, canvas.width, canvas.height);
-		}
 
 		//Get the selected magnitudes
 		var analysisFreq = this.frequencies(); //Frequencies on which this analysis is made
 		var magnitudes = new Float32Array(analysisFreq.length);
 
 		var magnitude,
-		freqIndex = 0,
-		maxMagnitude = 0,
-		maxMagnitudeFreq;
+			freqIndex = 0,
+			maxMagnitude = 0,
+			maxMagnitudeFreq;
 
-		for (var i = 0; i < this._fft.spectrum.length; i++ ) { //For each frequency
+		for (var i = 0; i < fft.length; i++) { //For each frequency
 			var isMagnitudeSaved = ~analysisFreq.indexOf(i); //Is this magnitude saved ?
 
-			if (!showFFT && !isMagnitudeSaved) { //If we don't show the FFT or we don't save this magnitude value
+			if (!isMagnitudeSaved) { //If we don't show the FFT or we don't save this magnitude value
 				continue; //Ignore this magnitude
 			}
 
-			//Multiply spectrum by a zoom value
-			magnitude = this._fft.spectrum[i] * canvas.height / 2; // * 4000;
+			magnitude = fft[i];
 
-			if (showFFT) {
-				//Draw rectangle bars for each frequency bin
-				ctx.fillRect(i * 4, canvas.height, 3, - magnitude);
-			}
+			magnitudes[freqIndex] = magnitude;
+			freqIndex++;
 
-			if (isMagnitudeSaved) { //If we have to save this magnitude
-				magnitudes[freqIndex] = magnitude;
-				freqIndex++;
-
-				if (magnitude > maxMagnitude) { //Is this the max. magnitude in the FFT ?
-					maxMagnitude = magnitude;
-					maxMagnitudeFreq = freqIndex;
-				}
+			if (magnitude > maxMagnitude) { //Is this the max. magnitude in the FFT ?
+				maxMagnitude = magnitude;
+				maxMagnitudeFreq = freqIndex;
 			}
 		}
 
 		if (this._magnitudes.length < this._maxAnalysisLength) { //If this analysis is not overflowed
 			//Save data in arrays
-			this._magnitudes.push(magnitudes);
+			this._magnitudes.push(fft);
 			this._time.push(t);
 		}
 
@@ -448,17 +461,69 @@ VoiceAnalysis.prototype = {
 			this._maxMagnitude = maxMagnitude;
 			this._maxMagnitudeFreq = maxMagnitudeFreq;
 		}
+
+		if (showFFT) { //If FFT is shown, draw it
+			this.drawFft(fft);
+		}
+	},
+	drawFft: function (fft) {
+		var canvas = this.control('canvas')[0],
+			ctx = canvas.getContext('2d');
+
+		//Get the selected magnitudes
+		var analysisFreq = this.frequencies(); //Frequencies on which this analysis is made
+
+		var magnitude;
+		for (var i = 0; i < fft.length; i++) { //For each frequency
+			var isMagnitudeSaved = ~analysisFreq.indexOf(i); //Is this magnitude saved ?
+
+			//Multiply spectrum by a zoom value?
+			magnitude = fft[i]/* * canvas.height / 2*/; // * 4000;
+
+			ctx.fillStyle = isMagnitudeSaved ? 'black' : 'gray';
+			if (isMagnitudeSaved && magnitude > canvas.height) {
+				ctx.fillStyle = 'red';
+			}
+
+			//Draw rectangle bars for each frequency bin
+			ctx.fillRect(i * 4, canvas.height, 3, - magnitude); // Fill from bottom to value
+			ctx.clearRect(i * 4, 0, 3, canvas.height - magnitude); // Clear from top to value
+		}
+
+		return canvas;
+	},
+	drawFftAt: function (timePercent) {
+		if (!this._time || !this._time.length) {
+			return;
+		}
+
+		var endTime = this._time[this._time.length - 1],
+			atTime = endTime * timePercent / 100;
+
+		var atTimeIndex = 0;
+		for (var i = 0; i < this._time.length; i++) {
+			var t = this._time[i];
+
+			if (t >= atTime) {
+				atTimeIndex = i;
+				break;
+			}
+		}
+
+		var fft = this._magnitudes[atTimeIndex];
+
+		return this.drawFft(fft);
 	},
 	/**
 	 * Method to call when the audio is finished.
 	 */
-	ended: function ended() {
+	ended: function () {
 		this._updateStatus(2);
 	},
 	/**
 	 * Process the audio data.
 	 */
-	processData: function processData() {
+	processData: function () {
 		if (this.status() < 2 || !this._magnitudes || this._magnitudes.length == 0) {
 			return false;
 		}
@@ -569,7 +634,7 @@ VoiceAnalysis.prototype = {
 	 * Export the audio data.
 	 * @param  {String} format The exporting format : csv or json.
 	 */
-	exportData: function exportData(format) {
+	exportData: function (format) {
 		format = format || 'json';
 
 		switch (format) { //Different methods for deffierent export formats
