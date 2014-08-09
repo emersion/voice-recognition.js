@@ -45,6 +45,12 @@ if (AudioContext) {
 				// Create an AudioNode from the stream.
 				var mediaStreamSource = audioContext.createMediaStreamSource(stream);
 
+				// Chromium wants a destination for waveNode
+				// If no dest is set, onaudioprocess will never be fired
+				var nullNode = audioContext.createGain();
+				nullNode.gain.value = 0;
+				nullNode.connect(audioContext.destination);
+
 				var gainNode = audioContext.createGain();
 				gainNode.gain.value = 1;
 
@@ -52,7 +58,7 @@ if (AudioContext) {
 				analyser.smoothingTimeConstant = 0.3;
 				analyser.fftSize = 1024;
 
-				var waveNode = audioContext.createScriptProcessor(512, 1, 1);
+				var waveNode = audioContext.createScriptProcessor(1024, 1, 1);
 				waveNode.addEventListener('audioprocess', function (e) {
 					if (!currentStream) { // The recording has been stopped
 						return;
@@ -75,7 +81,8 @@ if (AudioContext) {
 				mediaStreamSource.connect(gainNode);
 				gainNode.connect(waveNode);
 				gainNode.connect(analyser);
-				//gainNode.connect(audioContext.destination);
+				waveNode.connect(nullNode);
+				//gainNode.connect(audioContext.destination); // Uncomment to output audio
 
 				options.start(2, audioContext.sampleRate, 512);
 			}, function (err) {

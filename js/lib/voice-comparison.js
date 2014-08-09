@@ -348,6 +348,11 @@ VoiceComparison.prototype = {
 				rightMagnitude = comparableData.right[i][j];
 				leftMagnitude = comparableData.left[i][j];
 
+				if (!rightMagnitude && !leftMagnitude) {
+					Utils.logMessage('WARN: rightMagnitude=0 and leftMagnitude=0 at '+i+','+j);
+					continue;
+				}
+
 				//Calculate the deviation %
 				deviationPercentage = Math.abs(rightMagnitude - leftMagnitude);
 				ratio = deviationPercentage / ((rightMagnitude + leftMagnitude) / 2);
