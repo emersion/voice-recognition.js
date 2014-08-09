@@ -5,7 +5,8 @@
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
 
 	<!-- Bootstrap -->
-	<link href="css/bootstrap.min.css" rel="stylesheet" media="screen"/>
+	<link href="bower_components/bootstrap/dist/css/bootstrap.css" rel="stylesheet" media="screen"/>
+	<link href="bower_components/bootstrap/dist/css/bootstrap-responsive.css" rel="stylesheet" media="screen"/>
 
 	<link href="css/style.css" rel="stylesheet" media="screen"/>
 </head>
@@ -133,7 +134,7 @@
 	<div class="fft-container">
 		<audio id="audio-element" controls="true"></audio>
 		</audio><br />
-		<canvas id="fft" height="200" class="img-polaroid"></canvas>
+		<canvas id="fft" height="255" class="img-polaroid"></canvas>
 	</div>
 	
 	<div class="form-horizontal">
@@ -198,15 +199,16 @@
 	</div>
 </div>
 
-<script src="js/lib/jquery-1.8.3.min.js"></script>
-<script src="js/lib/bootstrap.min.js"></script>
-<script src="js/lib/recorder.js"></script>
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="bower_components/q/release/2.0.0/q.min.js"></script>
 <script src="js/lib/utils.js"></script>
 <script src="js/lib/inherit.js"></script>
 <script src="js/lib/observable.js"></script>
 <script src="js/lib/options.js"></script>
 <script src="js/lib/math.js"></script>
 <script src="js/lib/progress.js"></script>
+<script src="js/lib/recorder.js"></script>
 <script src="js/lib/voice-analysis.js"></script>
 <script src="js/lib/voice-comparison.js"></script>
 <script src="js/lib/voice-recognition.js"></script>

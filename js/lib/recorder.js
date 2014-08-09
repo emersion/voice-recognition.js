@@ -22,7 +22,6 @@ if (AudioContext) {
 		}, function (stream) {
 			deferred.resolve(stream);
 		}, function (err) {
-			Utils.logMessage('Cannot get user media: '+err);
 			deferred.reject(err);
 		});
 
@@ -79,6 +78,24 @@ if (AudioContext) {
 				//gainNode.connect(audioContext.destination);
 
 				options.start(2, audioContext.sampleRate, 512);
+			}, function (err) {
+				var msg;
+				if (err == 'NOT_SUPPORTED_ERROR') {
+					msg = 'the browser does\'nt support microphone capturing';
+				} else if (err == 'PERMISSION_DENIED') {
+					msg = 'you denied the application to access your microphone';
+				} else if (err == 'MANDATORY_UNSATISFIED_ERROR') {
+					msg = 'no audio tracks are found';
+				} else if (err == 'NO_DEVICES_FOUND') {
+					msg = 'no microphone detected';
+				}
+				if (msg) {
+					msg += ' ('+err+')';
+				} else {
+					msg = err;
+				}
+
+				Utils.logMessage('Cannot capture audio: '+msg);
 			});
 		},
 		stop: function () {
