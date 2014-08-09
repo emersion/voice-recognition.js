@@ -19,6 +19,11 @@ Utils.Options.register('voice.shifting.toleratedRatio', 'number', '#options-tole
 
 var comparison; //The voice comparison
 
+//Create a new progress for the recognition
+var globalProgress = new Utils.Progress({
+	parts: 4 //TODO
+});
+
 //Global controls
 var $globalControls = {
 	play: $('#audio-element-play'),
@@ -137,6 +142,8 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			speakRemainingTime: $('#speak-remaining-time-' + i),
 			audio: $('#audio-element-' + i),
 			timeInput: $('#audio-time-' + i),
+			goStart: $('#audio-go-start-' + i),
+			goEnd: $('#audio-go-end-' + i),
 			canvas: $('#fft-' + i),
 			title: $('#audio-file-name-' + i),
 			editTitle: $('#audio-file-name-edit-' + i),
@@ -235,6 +242,19 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 		$controls.audio.bind('playing', function() {
 			analysis.reset();
 		});
+
+		$controls.timeInput.on('input', function () {
+			var timePercent = Number($(this).val());
+
+			analysis.drawFftAtPercent(timePercent);
+		});
+		$controls.goStart.click(function () {
+			analysis.drawFftAt(analysis.getStartTime());
+		});
+		$controls.goEnd.click(function () {
+			analysis.drawFftAt(analysis.getEndTime());
+		});
+
 		$controls.processData.bind('click', function() {
 			analysis.processData();
 		});
@@ -303,6 +323,9 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 			}
 
 			if (status > 2) {
+				$controls.goStart.prop('disabled', false);
+				$controls.goEnd.prop('disabled', false);
+
 				$controls.exportCSV.prop('disabled', false);
 				$controls.exportJSON.prop('disabled', false);
 				$controls.exportModel.prop('disabled', false);
@@ -319,6 +342,10 @@ for (var i = 0; i < Utils.Options.get('voice.audioNbr'); i++) { //For each voice
 					specificFunctions[status]();
 				}
 			}
+		});
+
+		analysis.bind('seeked', function (data) {
+			$controls.timeInput.val(Math.round(data.atPercent));
 		});
 
 		//Now we can initialize the analysis
