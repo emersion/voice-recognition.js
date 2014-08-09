@@ -304,70 +304,29 @@ $recognitionControls.speakStart.click(function() {
 		}, delayToSpeak);
 	};
 
-	navigator.getMedia = (navigator.getUserMedia ||
-		navigator.webkitGetUserMedia ||
-		navigator.mozGetUserMedia ||
-		navigator.msGetUserMedia);
-
-	if (navigator.getMedia && (window.AudioContext || window.webkitAudioContext) && false) { //Not implemented yet
-		navigator.getMedia({
-			video: false,
-			audio: true
-		}, function(stream) {
+	var frameBuffer, i, processedBuffers = 0, timeInterval;
+	Recorder.record({
+		start: function(channels, sampleRate, bufferLength) {
 			recording();
-			
-			var context = (window.webkitAudioContext) ? new window.webkitAudioContext() : new window.AudioContext();
-			var microphone = context.createMediaStreamSource(stream);
 
-			microphone.connect(context.destination);
-		}, function(err) {
-			var msg;
-			if (err == 'NOT_SUPPORTED_ERROR') {
-				msg = 'the browser does\'nt support microphone capturing';
-			} else if (err == 'PERMISSION_DENIED') {
-				msg = 'you denied the application to access your microphone';
-			} else if (err == 'MANDATORY_UNSATISFIED_ERROR') {
-				msg = 'no audio tracks are found';
-			} else if (err == 'NO_DEVICES_FOUND') {
-				msg = 'no microphone detected';
-			}
-
-			globalProgress.error('Can\'t capture microphone : '+((msg) ? msg + ' ('+err+')' : err)+'.');
-		});
-	} else { //Flash fallback
-		var frameBuffer, i, processedBuffers = 0, timeInterval;
-		Recorder.record({
-			start: function(channels, sampleRate, bufferLength) {
-				recording();
-
-				bufferLength = 512;
-				timeInterval = (1 / sampleRate) * bufferLength;
-				analysis.ready(channels, sampleRate, bufferLength);
-				frameBuffer = new Float32Array(bufferLength);
-			},
-			cancel: function() {
-				globalProgress.error('Speech cancelled.');
-			},
-			progress: function(t, activityLevel) {
-				$recognitionControls.speakStop.css('box-shadow', '0px 0px '+(activityLevel / 100) * 50+'px #BD362F');
-			},
-			audioAvailable: function(data, t) {
-				data = data.split(';');
-
-				var processedSamples = 0;
-				while (processedSamples + frameBuffer.length < data.length) {
-					for (i = 0; i < frameBuffer.length; i++) {
-						frameBuffer[i] = data[processedSamples + i] || 0;
-					}
-
-					analysis.audioAvailable(frameBuffer, (processedBuffers + 1) * timeInterval);
-
-					processedSamples += frameBuffer.length;
-					processedBuffers++;
-				}
-			}
-		});
-	}
+			bufferLength = 512;
+			timeInterval = (1 / sampleRate) * bufferLength;
+			analysis.ready(channels, sampleRate, bufferLength);
+			frameBuffer = new Float32Array(bufferLength);
+		},
+		cancel: function() {
+			globalProgress.error('Speech cancelled.');
+		},
+		progress: function(t, activityLevel) {
+			$recognitionControls.speakStop.css('box-shadow', '0px 0px '+(activityLevel / 100) * 50+'px #BD362F');
+		},
+		audioAvailable: function(data, t) {
+			analysis.audioAvailable(buffer, t);
+		},
+		fftAvailable: function (fft, t) {
+			analysis.fftAvailable(fft, t);
+		}
+	});
 });
 $recognitionControls.speakStop.click(function() {
 	if (!isRecording) {
