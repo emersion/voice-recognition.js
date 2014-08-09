@@ -259,6 +259,30 @@ VoiceAnalysis.prototype = {
 			this._frequencies = freq;
 		}
 	},
+	magnitudesAtIndex: function (index) {
+		//Get the selected magnitudes
+		var analysisFreq = this.frequencies(); //Frequencies on which this analysis is made
+		var magnitudes = new Float32Array(analysisFreq.length);
+
+		var magnitude,
+			freqIndex = 0,
+			maxMagnitude = 0,
+			maxMagnitudeFreq;
+
+		var fft = this._magnitudes[index];
+		for (var i = 0; i < fft.length; i++) { //For each frequency
+			var isMagnitudeSaved = ~analysisFreq.indexOf(i); //Is this magnitude saved ?
+
+			if (!isMagnitudeSaved) { //If we don't show the FFT or we don't save this magnitude value
+				continue; //Ignore this magnitude
+			}
+
+			magnitudes[freqIndex] = fft[i];
+			freqIndex++;
+		}
+
+		return magnitudes;
+	},
 	/**
 	 * Update this analysis' status.
 	 * @param  {Number} [status] The new status.
@@ -300,12 +324,6 @@ VoiceAnalysis.prototype = {
 			.bind('ended pause', function() { //On pause/end
 				that.ended();
 			});
-
-		this.control('timeInput').on('input', function () {
-			var timePercent = Number($(this).val());
-
-			that.drawFftAt(timePercent);
-		});
 
 		this._updateStatus();
 	},
@@ -420,13 +438,10 @@ VoiceAnalysis.prototype = {
 		}
 
 		//Variables for canvas drawing
-		var showFFT = Utils.Options.get('voice.comparing.showFFT'), // Do we have to draw the FFT on the canvas ?
-		canvas = this.control('canvas')[0],
-		ctx = canvas.getContext('2d');
+		var showFFT = Utils.Options.get('voice.comparing.showFFT'); // Do we have to draw the FFT on the canvas ?
 
 		//Get the selected magnitudes
 		var analysisFreq = this.frequencies(); //Frequencies on which this analysis is made
-		var magnitudes = new Float32Array(analysisFreq.length);
 
 		var magnitude,
 			freqIndex = 0,
@@ -441,9 +456,6 @@ VoiceAnalysis.prototype = {
 			}
 
 			magnitude = fft[i];
-
-			magnitudes[freqIndex] = magnitude;
-			freqIndex++;
 
 			if (magnitude > maxMagnitude) { //Is this the max. magnitude in the FFT ?
 				maxMagnitude = magnitude;
@@ -481,7 +493,7 @@ VoiceAnalysis.prototype = {
 			magnitude = fft[i]/* * canvas.height / 2*/; // * 4000;
 
 			ctx.fillStyle = isMagnitudeSaved ? 'black' : 'gray';
-			if (isMagnitudeSaved && magnitude > canvas.height) {
+			if (isMagnitudeSaved && magnitude >= canvas.height) {
 				ctx.fillStyle = 'red';
 			}
 
@@ -492,13 +504,10 @@ VoiceAnalysis.prototype = {
 
 		return canvas;
 	},
-	drawFftAt: function (timePercent) {
+	drawFftAt: function (atTime) {
 		if (!this._time || !this._time.length) {
 			return;
 		}
-
-		var endTime = this._time[this._time.length - 1],
-			atTime = endTime * timePercent / 100;
 
 		var atTimeIndex = 0;
 		for (var i = 0; i < this._time.length; i++) {
@@ -506,13 +515,30 @@ VoiceAnalysis.prototype = {
 
 			if (t >= atTime) {
 				atTimeIndex = i;
+				atTime = t;
 				break;
 			}
 		}
 
+		this.notify('seeked', {
+			at: atTime,
+			atIndex: atTimeIndex,
+			atPercent: atTimeIndex / this._time.length * 100
+		});
+
 		var fft = this._magnitudes[atTimeIndex];
 
 		return this.drawFft(fft);
+	},
+	drawFftAtPercent: function (timePercent) {
+		if (!this._time || !this._time.length) {
+			return;
+		}
+
+		var endTime = this._time[this._time.length - 1],
+			atTime = endTime * timePercent / 100;
+
+		return this.drawFftAt(atTime);
 	},
 	/**
 	 * Method to call when the audio is finished.
@@ -535,10 +561,12 @@ VoiceAnalysis.prototype = {
 		Utils.logMessage('Standardizing magnitudes...');
 		Utils.logMessage('Max magnitude for this analysis : ' + this._maxMagnitude);
 
+		var analysisFreq = this.frequencies(); //Frequencies on which this analysis is made
+
 		this._standardizedMagnitudes = [];
 		var i, j, magnitudes;
 		for (i = 0; i < this._magnitudes.length; i++) { //For each data frame
-			magnitudes = this._magnitudes[i]; //Get magnitudes saved at this time
+			magnitudes = this.magnitudesAtIndex(i); //Get magnitudes saved at this time
 
 			this._standardizedMagnitudes[i] = new Float32Array(magnitudes.length); //Create a new array to store standardized data
 
@@ -556,6 +584,7 @@ VoiceAnalysis.prototype = {
 		this._range = [0, this._dataIndex]; //The voice range
 
 		//Internal options
+		//TODO: use Utils.Options
 		var threshold = 8, //Required freq. magnitude in % to determine the begining/end of the speech
 		requiredFollowingPts = 4; //Required following points wich are > the threshold to determine the begining/end of the speech
 
@@ -568,7 +597,7 @@ VoiceAnalysis.prototype = {
 			magnitude = this._standardizedMagnitudes[i][0]; //Get the first magnitude of the FFT
 
 			if (magnitude > threshold) { //If the magnitude if greater than the threshold
-				Utils.logMessage('Peak detected', i, magnitude + ' > ' + threshold);
+				Utils.logMessage('Peak detected', i, magnitude + '% > ' + threshold + '%');
 				startedSince++;
 			} else if (startedSince) {
 				startedSince = 0;
@@ -615,7 +644,7 @@ VoiceAnalysis.prototype = {
 
 		//Display some stats
 		Utils.logMessage('Number of points collected : ' + (this._range[1] - this._range[0] + 1));
-		Utils.logMessage('Speaking duration : ' + duration + ' ('+startTime+' -> '+endTime+')');
+		Utils.logMessage('Speaking duration : ' + duration + 'ms (from '+startTime+'ms to '+endTime+'ms)');
 
 		var t;
 		for (var i = 0; i < this._magnitudes.length; i++) {
@@ -629,6 +658,18 @@ VoiceAnalysis.prototype = {
 		this._updateStatus(3);
 
 		this.notify('complete'); //Trigger the event : we've finished with this voice analysis !
+	},
+	getStartIndex: function () {
+		return this._range[0];
+	},
+	getEndIndex: function () {
+		return this._range[1];
+	},
+	getStartTime: function () {
+		return this._time[this.getStartIndex()];
+	},
+	getEndTime: function () {
+		return this._time[this.getEndIndex()];
 	},
 	/**
 	 * Export the audio data.

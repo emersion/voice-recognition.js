@@ -93,26 +93,36 @@
 			</p>
 			<div class="fft-container">
 				<!--<audio id="audio-element-0" controls="true"></audio>-->
-				<input id="audio-time-0" min="0" max="100" step="1" value="0" type="range">
-				<canvas id="fft-0" height="200" class="img-polaroid"></canvas>
+				<div class="row-fluid">
+					<div class="span2">
+						<p class="btn-group">
+							<button class="btn btn-mini" type="button" id="audio-go-start-0"><i class="icon-step-backward"></i></button>
+							<button class="btn btn-mini" type="button" id="audio-go-end-0"><i class="icon-step-forward"></i></button>
+						</p>
+					</div>
+					<div class="span10">
+						<input id="audio-time-0" min="0" max="100" step="1" value="0" type="range">
+					</div>
+				</div>
+				<canvas id="fft-0" height="255" class="img-polaroid"></canvas>
 			</div>
 		</div>
 		<div class="span6">
 			<h1><span id="audio-file-name-1">Audio input #2</span> <button class="btn" type="button" id="audio-file-name-edit-1"><i class="icon-pencil"></i></button></h1>
 			
 			<ul class="nav nav-tabs">
-				<li><a href="#input-microphone-1" data-toggle="tab">Microphone</a></li>
-				<li class="active"><a href="#input-file-1" data-toggle="tab">Input file</a></li>
+				<li class="active"><a href="#input-microphone-1" data-toggle="tab">Microphone</a></li>
+				<li><a href="#input-file-1" data-toggle="tab">Input file</a></li>
 			</ul>
 			<div class="tab-content">
-				<div class="tab-pane" id="input-microphone-1">
+				<div class="tab-pane active" id="input-microphone-1">
 					<div class="btn-speak-container">
 						<button class="btn btn-primary btn-large btn-speak" type="button" id="speak-start-1"><img src="img/speak-light.png" style="width:100px;height:100px;"/></button>
 						<button class="btn btn-large btn-danger btn-speak" type="button" id="speak-stop-1" style="display:none;" disabled="disabled"><img src="img/speak-light.png"/></button>
 						<p id="speak-remaining-time-1"></p>
 					</div>
 				</div>
-				<div class="tab-pane active" id="input-file-1">
+				<div class="tab-pane" id="input-file-1">
 					<div class="form-horizontal">
 						<div class="control-group">
 							<label class="control-label" for="audio-file-input-1">Input file</label>
@@ -135,8 +145,18 @@
 
 			<div class="fft-container">
 				<!--<audio id="audio-element-1" controls="true"></audio>-->
-				<input id="audio-time-1" min="0" max="100" step="1" value="0" type="range">
-				<canvas id="fft-1" height="200" class="img-polaroid"></canvas>
+				<div class="row-fluid">
+					<div class="span2">
+						<p class="btn-group">
+							<button class="btn btn-mini" type="button" id="audio-go-start-1"><i class="icon-step-backward"></i></button>
+							<button class="btn btn-mini" type="button" id="audio-go-end-1"><i class="icon-step-forward"></i></button>
+						</p>
+					</div>
+					<div class="span10">
+						<input id="audio-time-1" min="0" max="100" step="1" value="0" type="range">
+					</div>
+				</div>
+				<canvas id="fft-1" height="255" class="img-polaroid"></canvas>
 			</div>
 		</div>
 	</div>
@@ -235,6 +255,7 @@
 <script src="js/lib/observable.js"></script>
 <script src="js/lib/options.js"></script>
 <script src="js/lib/math.js"></script>
+<script src="js/lib/progress.js"></script>
 <script src="js/lib/recorder.js"></script>
 <script src="js/lib/voice-analysis.js"></script>
 <script src="js/lib/voice-comparison.js"></script>
